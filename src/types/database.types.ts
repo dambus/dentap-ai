@@ -430,6 +430,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           phone_alt: string | null
+          search_text: string | null
           updated_at: string | null
         }
         Insert: {
@@ -450,6 +451,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           phone_alt?: string | null
+          search_text?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -470,6 +472,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           phone_alt?: string | null
+          search_text?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -931,6 +934,7 @@ export type Database = {
     Functions: {
       auth_clinic_id: { Args: never; Returns: string }
       auth_role: { Args: never; Returns: string }
+      normalize_sr: { Args: { input: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

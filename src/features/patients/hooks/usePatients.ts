@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase'
+import { normalizeSr } from '../../../lib/normalizeSr'
 import type { Tables } from '../../../types'
 
 export type PatientListItem = Pick<
@@ -29,9 +30,8 @@ export function usePatients({ search = '', page = 1, pageSize = 20 }: UsePatient
         .order('first_name')
 
       if (trimmed) {
-        query = query.or(
-          `last_name.ilike.%${trimmed}%,first_name.ilike.%${trimmed}%,phone.ilike.%${trimmed}%`
-        )
+        const norm = normalizeSr(trimmed)
+        query = query.or(`search_text.ilike.%${norm}%,phone.ilike.%${trimmed}%`)
       } else {
         query = query.range((page - 1) * pageSize, page * pageSize - 1)
       }
