@@ -1,14 +1,74 @@
 import { useParams } from 'react-router-dom'
-import { User } from 'lucide-react'
+import { useState } from 'react'
+import { usePatient } from '../features/patients/hooks/usePatient'
+import { PatientHeader } from '../features/patients/components/PatientHeader'
+import { TabPregled } from '../features/patients/components/TabPregled'
+import { TabAnamneza } from '../features/patients/components/TabAnamneza'
+import { Spinner } from '../components/ui'
+import { cn } from '../lib/utils'
+
+type PatientTab = 'pregled' | 'anamneza'
 
 export function PacijentPage() {
   const { id } = useParams<{ id: string }>()
+  const [tab, setTab] = useState<PatientTab>('pregled')
+  const { data: patient, isLoading } = usePatient(id ?? '')
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64 gap-3">
+        <Spinner size="lg" className="text-teal-600" />
+      </div>
+    )
+  }
+
+  if (!patient) {
+    return (
+      <div className="flex items-center justify-center h-64 text-slate-500 dark:text-slate-400">
+        Pacijent nije pronađen
+      </div>
+    )
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
-      <User className="w-10 h-10" />
-      <p className="text-sm font-medium">Karton pacijenta — Task 011</p>
-      {id && <p className="text-xs font-mono">{id}</p>}
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 overflow-hidden">
+      <PatientHeader patient={patient} />
+
+      {/* Tab navigacija */}
+      <div className="flex items-center gap-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4">
+        <button
+          onClick={() => setTab('pregled')}
+          className={cn(
+            'px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+            tab === 'pregled'
+              ? 'border-teal-600 text-teal-600 dark:text-teal-400'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          )}
+        >
+          Pregled
+        </button>
+        <button
+          onClick={() => setTab('anamneza')}
+          className={cn(
+            'px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+            tab === 'anamneza'
+              ? 'border-teal-600 text-teal-600 dark:text-teal-400'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          )}
+        >
+          Anamneza
+        </button>
+      </div>
+
+      {/* Tab sadržaj */}
+      <div className="flex-1 overflow-y-auto">
+        {tab === 'pregled' && (
+          <TabPregled patientId={patient.id} />
+        )}
+        {tab === 'anamneza' && (
+          <TabAnamneza patientId={patient.id} clinicId={patient.clinic_id} />
+        )}
+      </div>
     </div>
   )
 }
