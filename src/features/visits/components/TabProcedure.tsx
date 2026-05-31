@@ -29,14 +29,14 @@ export function TabProcedure({ visit }: TabProcedureProps) {
   const [price, setPrice] = useState('')
 
   async function handleAddProcedure() {
-    if (!profile || !serviceId) return
+    if (!profile) return
     try {
       await createProcedure.mutateAsync({
         clinic_id: visit.clinic_id,
         visit_id: visit.id,
         patient_id: visit.patient_id,
         doctor_id: visit.doctor_id,
-        service_id: serviceId,
+        service_id: serviceId || null,
         tooth_fdi: toothFdi || null,
         description: description || null,
         price: price ? parseInt(price) : null,
@@ -110,7 +110,6 @@ export function TabProcedure({ visit }: TabProcedureProps) {
           <Button
             onClick={handleAddProcedure}
             loading={createProcedure.isPending}
-            disabled={!serviceId}
             size="sm"
           >
             Dodaj proceduru

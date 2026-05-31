@@ -52,11 +52,14 @@ export function Modal({
                     {title}
                   </Dialog.Title>
                 )}
-                {description && (
-                  <Dialog.Description className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                    {description}
-                  </Dialog.Description>
-                )}
+                <Dialog.Description
+                  className={cn(
+                    'mt-0.5 text-sm text-slate-500 dark:text-slate-400',
+                    !description && 'sr-only'
+                  )}
+                >
+                  {description || ''}
+                </Dialog.Description>
               </div>
               <Dialog.Close
                 onClick={onClose}
