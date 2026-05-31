@@ -63,11 +63,12 @@ export function DailyCalendar({
   }, [])
 
   const totalHeight = (END_HOUR - START_HOUR) * HOUR_HEIGHT
+  const gridHeight = totalHeight + 40 // 40px buffer da 20:00 termini budu vidljivi
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Vremenska osa — fiksirana levo */}
-      <div className="w-14 shrink-0 relative" style={{ height: totalHeight }}>
+      <div className="w-14 shrink-0 relative" style={{ height: gridHeight }}>
         {HOURS.map((hour) => (
           <div
             key={hour}
@@ -84,7 +85,7 @@ export function DailyCalendar({
         <div
           className="relative flex"
           style={{
-            height: totalHeight,
+            height: gridHeight,
             minWidth: visibleDoctors.length * 180,
           }}
         >
