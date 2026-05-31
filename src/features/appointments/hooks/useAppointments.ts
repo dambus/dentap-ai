@@ -20,7 +20,7 @@ export function useAppointments(date: Date) {
         .select(`
           *,
           patient:patients ( id, first_name, last_name, phone ),
-          doctor:profiles ( id, first_name, last_name, display_name, color )
+          doctor:profiles!doctor_id ( id, first_name, last_name, display_name, color )
         `)
         .gte('starts_at', start)
         .lt('starts_at', end)
