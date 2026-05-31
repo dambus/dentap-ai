@@ -10,6 +10,7 @@ import { DateNavigation } from '../features/appointments/components/DateNavigati
 import { WeekNavigation } from '../features/appointments/components/WeekNavigation'
 import { DoctorFilter } from '../features/appointments/components/DoctorFilter'
 import { NewAppointmentModal } from '../features/appointments/components/NewAppointmentModal'
+import { AppointmentDetailsModal } from '../features/appointments/components/AppointmentDetailsModal'
 import { Button, Spinner } from '../components/ui'
 import { cn } from '../lib/utils'
 import type { AppointmentWithRelations } from '../features/appointments/hooks/useAppointments'
@@ -26,6 +27,7 @@ export function PlanerPage() {
   const [view, setView] = useState<PlanerView>('day')
   const [modalOpen, setModalOpen] = useState(false)
   const [slotData, setSlotData] = useState<SlotClickData | null>(null)
+  const [detailsAppt, setDetailsAppt] = useState<AppointmentWithRelations | null>(null)
   const profile = useAuthStore((s) => s.profile)
 
   const { data: doctors = [], isLoading: loadingDoctors } = useDoctors()
@@ -50,8 +52,8 @@ export function PlanerPage() {
     setModalOpen(true)
   }
 
-  function handleAppointmentClick(_appt: AppointmentWithRelations) {
-    // Task 008 — operativni workflow
+  function handleAppointmentClick(appt: AppointmentWithRelations) {
+    setDetailsAppt(appt)
   }
 
   function handleDayClick(day: Date) {
@@ -170,6 +172,11 @@ export function PlanerPage() {
         onClose={closeModal}
         initialDate={slotData?.date}
         initialDoctorId={slotData?.doctorId}
+      />
+
+      <AppointmentDetailsModal
+        appointment={detailsAppt}
+        onClose={() => setDetailsAppt(null)}
       />
     </div>
   )
