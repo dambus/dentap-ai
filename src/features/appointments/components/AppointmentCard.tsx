@@ -49,16 +49,19 @@ export function AppointmentCard({ appointment, style, onClick }: AppointmentCard
         </span>
 
         {/* Ime pacijenta */}
-        {patient && (
-          <span
-            className={cn(
-              'font-semibold leading-tight text-slate-800 dark:text-slate-100 truncate',
-              isTiny ? 'text-[10px]' : 'text-xs'
-            )}
-          >
-            {patient.last_name} {patient.first_name}
-          </span>
-        )}
+        <span
+          className={cn(
+            'font-semibold leading-tight truncate',
+            patient
+              ? 'text-slate-800 dark:text-slate-100'
+              : 'text-slate-400 dark:text-slate-500 italic',
+            isTiny ? 'text-[10px]' : 'text-xs'
+          )}
+        >
+          {patient
+            ? `${patient.last_name} ${patient.first_name}`
+            : '–'}
+        </span>
 
         {/* Tip termina + status (samo ako ima mesta) */}
         {!isShort && (

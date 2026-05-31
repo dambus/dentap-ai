@@ -57,7 +57,9 @@ export function useCreateAppointment() {
       return result
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'appointments',
+      })
     },
   })
 }

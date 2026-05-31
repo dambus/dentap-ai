@@ -22,7 +22,9 @@ export function useUpdateAppointmentStatus() {
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'appointments',
+      })
     },
   })
 }
