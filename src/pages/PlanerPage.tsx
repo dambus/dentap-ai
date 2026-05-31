@@ -6,6 +6,7 @@ import { useDoctors } from '../features/appointments/hooks/useDoctors'
 import { DailyCalendar } from '../features/appointments/components/DailyCalendar'
 import { DateNavigation } from '../features/appointments/components/DateNavigation'
 import { DoctorFilter } from '../features/appointments/components/DoctorFilter'
+import { Spinner } from '../components/ui'
 
 export function PlanerPage() {
   const [date, setDate] = useState<Date>(() => new Date())
@@ -51,16 +52,22 @@ export function PlanerPage() {
         </div>
       </div>
 
-      {/* Kalendar — scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <DailyCalendar
-          date={date}
-          appointments={appointments}
-          doctors={doctors}
-          selectedDoctorIds={effectiveDoctorIds}
-          isLoading={isLoading}
-        />
-      </div>
+      {/* Kalendar — loading u flex-1 garantuje centar vidokruga */}
+      {isLoading ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <Spinner size="lg" className="text-teal-600" />
+          <span className="text-sm font-medium text-slate-400 dark:text-slate-500">Učitavanje...</span>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <DailyCalendar
+            date={date}
+            appointments={appointments}
+            doctors={doctors}
+            selectedDoctorIds={effectiveDoctorIds}
+          />
+        </div>
+      )}
     </div>
   )
 }

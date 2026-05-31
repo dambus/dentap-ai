@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getHours, getMinutes, isToday } from 'date-fns'
 import { cn } from '../../../lib/utils'
-import { Spinner } from '../../../components/ui'
 import { AppointmentCard } from './AppointmentCard'
 import type { AppointmentWithRelations } from '../hooks/useAppointments'
 import type { DoctorOption } from '../hooks/useDoctors'
@@ -11,7 +10,6 @@ interface DailyCalendarProps {
   appointments: AppointmentWithRelations[]
   doctors: DoctorOption[]
   selectedDoctorIds: string[]
-  isLoading: boolean
   onAppointmentClick?: (appointment: AppointmentWithRelations) => void
 }
 
@@ -44,7 +42,6 @@ export function DailyCalendar({
   appointments,
   doctors,
   selectedDoctorIds,
-  isLoading,
   onAppointmentClick,
 }: DailyCalendarProps) {
   const [nowTop, setNowTop] = useState(getCurrentTimeTop)
@@ -64,14 +61,6 @@ export function DailyCalendar({
   }, [])
 
   const totalHeight = (END_HOUR - START_HOUR) * HOUR_HEIGHT
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center flex-1">
-        <Spinner size="lg" className="text-teal-600" />
-      </div>
-    )
-  }
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -155,12 +144,11 @@ export function DailyCalendar({
                   )}
                   style={{ minWidth: 180 }}
                 >
-                  {/* Doctor header — sticky */}
+                  {/* Doctor header — sticky, puna pozadina da ne propusta sadrzaj */}
                   <div
-                    className="sticky top-0 z-20 px-2 py-1.5 text-xs font-semibold border-b text-center truncate"
+                    className="sticky top-0 z-20 px-2 py-2 text-xs font-semibold text-center truncate bg-white dark:bg-slate-800 border-b-2"
                     style={{
-                      backgroundColor: `${color}15`,
-                      borderColor: `${color}30`,
+                      borderBottomColor: color,
                       color,
                     }}
                   >
