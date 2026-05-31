@@ -23,10 +23,17 @@ export function AppointmentCard({ appointment, style, onClick }: AppointmentCard
   const color = appointment.doctor?.color ?? DEFAULT_COLOR
   const patient = appointment.patient
   const durationMin = appointment.duration_min ?? 30
-  // <= 30 min: samo vreme + ime (nema mesta za tip)
-  // <= 15 min: samo vreme (nema mesta ni za ime)
-  const isShort = durationMin <= 30
-  const isTiny = durationMin <= 15
+  const isTiny = durationMin <= 15            // ≤15 min: samo vreme
+  const isShort = durationMin <= 30           // ≤30 min: vreme + kompaktni red
+  const isLong = durationMin > 30             // >30 min: sva 3 reda odvojeno
+
+  const typeLabel =
+    APPOINTMENT_TYPE_LABELS[appointment.appointment_type ?? 'regular'] ??
+    appointment.appointment_type
+
+  const patientName = patient
+    ? `${patient.last_name} ${patient.first_name}`
+    : null
 
   return (
     <button
@@ -43,33 +50,36 @@ export function AppointmentCard({ appointment, style, onClick }: AppointmentCard
         borderLeftColor: color,
       }}
     >
-      <div className="px-1.5 py-1 h-full flex flex-col gap-0.5 overflow-hidden">
+      <div className="px-1.5 py-1 h-full flex flex-col overflow-hidden">
         {/* Vreme */}
         <span className="text-[10px] font-semibold leading-none text-slate-500 dark:text-slate-400 shrink-0">
           {formatTime(appointment.starts_at)}
-          {!isShort && ` – ${formatTime(appointment.ends_at)}`}
+          {isLong && ` – ${formatTime(appointment.ends_at)}`}
         </span>
 
-        {/* Ime pacijenta — uvek prikazano ako ima mesta */}
-        {!isTiny && (
-          <span className="text-xs font-semibold leading-tight text-slate-800 dark:text-slate-100 truncate shrink-0">
-            {patient
-              ? `${patient.last_name} ${patient.first_name}`
-              : <span className="text-slate-400 dark:text-slate-500 italic">–</span>
-            }
+        {/* ≤15 min: nema više mesta */}
+        {isTiny ? null : isShort ? (
+          /* 16–30 min: ime + tip na jednom redu */
+          <span className="text-[10px] font-medium leading-tight text-slate-700 dark:text-slate-200 truncate mt-0.5">
+            {patientName
+              ? `${patientName} · ${typeLabel}`
+              : typeLabel}
           </span>
-        )}
-
-        {/* Tip termina + status — samo za duže termine (> 30 min) */}
-        {!isShort && (
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-              {APPOINTMENT_TYPE_LABELS[appointment.appointment_type ?? 'regular'] ?? appointment.appointment_type}
+        ) : (
+          /* >30 min: ime i tip odvojeno */
+          <>
+            <span className="text-xs font-semibold leading-tight text-slate-800 dark:text-slate-100 truncate mt-0.5">
+              {patientName ?? '–'}
             </span>
-            {appointment.arrival_status && appointment.arrival_status !== 'not_arrived' && (
-              <ArrivalStatusBadge status={appointment.arrival_status as 'arrived' | 'in_chair' | 'completed'} />
-            )}
-          </div>
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                {typeLabel}
+              </span>
+              {appointment.arrival_status && appointment.arrival_status !== 'not_arrived' && (
+                <ArrivalStatusBadge status={appointment.arrival_status as 'arrived' | 'in_chair' | 'completed'} />
+              )}
+            </div>
+          </>
         )}
       </div>
     </button>

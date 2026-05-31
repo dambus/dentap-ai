@@ -318,7 +318,7 @@ function ActionButtons({
         {arrivalStatus === 'in_chair' && (
           <Button size="sm" loading={isPending} onClick={onStartVisit}>
             <Play className="w-3.5 h-3.5" />
-            Počni posetу
+            Počni posetu
             <ChevronRight className="w-3.5 h-3.5" />
           </Button>
         )}
