@@ -127,7 +127,7 @@ export function TabAnamneza({ patientId, clinicId }: TabAnamenzaProps) {
           loading={updateRecord.isPending}
           disabled={saved}
         >
-          {saved ? '✓ Sačuvano' : 'Sačuva'}
+          {saved ? '✓ Sačuvano' : 'Sačuvaj'}
         </Button>
         {updateRecord.isError && (
           <span className="text-sm text-red-600 dark:text-red-400">Greška pri čuvanju</span>
