@@ -23,8 +23,10 @@ export function AppointmentCard({ appointment, style, onClick }: AppointmentCard
   const color = appointment.doctor?.color ?? DEFAULT_COLOR
   const patient = appointment.patient
   const durationMin = appointment.duration_min ?? 30
-  const isShort = durationMin < 30
-  const isTiny = durationMin < 20
+  // <= 30 min: samo vreme + ime (nema mesta za tip)
+  // <= 15 min: samo vreme (nema mesta ni za ime)
+  const isShort = durationMin <= 30
+  const isTiny = durationMin <= 15
 
   return (
     <button
@@ -48,24 +50,19 @@ export function AppointmentCard({ appointment, style, onClick }: AppointmentCard
           {!isShort && ` – ${formatTime(appointment.ends_at)}`}
         </span>
 
-        {/* Ime pacijenta */}
-        <span
-          className={cn(
-            'font-semibold leading-tight truncate',
-            patient
-              ? 'text-slate-800 dark:text-slate-100'
-              : 'text-slate-400 dark:text-slate-500 italic',
-            isTiny ? 'text-[10px]' : 'text-xs'
-          )}
-        >
-          {patient
-            ? `${patient.last_name} ${patient.first_name}`
-            : '–'}
-        </span>
+        {/* Ime pacijenta — uvek prikazano ako ima mesta */}
+        {!isTiny && (
+          <span className="text-xs font-semibold leading-tight text-slate-800 dark:text-slate-100 truncate shrink-0">
+            {patient
+              ? `${patient.last_name} ${patient.first_name}`
+              : <span className="text-slate-400 dark:text-slate-500 italic">–</span>
+            }
+          </span>
+        )}
 
-        {/* Tip termina + status (samo ako ima mesta) */}
+        {/* Tip termina + status — samo za duže termine (> 30 min) */}
         {!isShort && (
-          <div className="flex items-center gap-1 mt-auto">
+          <div className="flex items-center gap-1">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
               {APPOINTMENT_TYPE_LABELS[appointment.appointment_type ?? 'regular'] ?? appointment.appointment_type}
             </span>
