@@ -23,7 +23,10 @@ INSERT INTO public.clinics (id, name, address, city, phone, email) VALUES
 INSERT INTO auth.users (
   id, instance_id, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-  role, aud, created_at, updated_at
+  role, aud,
+  confirmation_token, recovery_token, email_change_token_new,
+  email_change_token_current, reauthentication_token,
+  created_at, updated_at
 )
 VALUES
   (
@@ -34,7 +37,9 @@ VALUES
     now(),
     jsonb_build_object('clinic_id', '00000000-0000-0000-0000-000000000001', 'role', 'owner'),
     jsonb_build_object('full_name', 'Dr. Ana Petrović'),
-    'authenticated', 'authenticated', now(), now()
+    'authenticated', 'authenticated',
+    '', '', '', '', '',
+    now(), now()
   ),
   (
     '00000000-0000-0000-0000-000000000012',
@@ -44,7 +49,9 @@ VALUES
     now(),
     jsonb_build_object('clinic_id', '00000000-0000-0000-0000-000000000001', 'role', 'doctor'),
     jsonb_build_object('full_name', 'Dr. Marko Jovanović'),
-    'authenticated', 'authenticated', now(), now()
+    'authenticated', 'authenticated',
+    '', '', '', '', '',
+    now(), now()
   ),
   (
     '00000000-0000-0000-0000-000000000013',
@@ -54,20 +61,22 @@ VALUES
     now(),
     jsonb_build_object('clinic_id', '00000000-0000-0000-0000-000000000001', 'role', 'reception'),
     jsonb_build_object('full_name', 'Jelena Nikolić'),
-    'authenticated', 'authenticated', now(), now()
+    'authenticated', 'authenticated',
+    '', '', '', '', '',
+    now(), now()
   );
 
 -- Auth identities (potrebno za email login)
 INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
 VALUES
   (gen_random_uuid(), '00000000-0000-0000-0000-000000000011', 'ana@demo.dentapp.rs',
-   '{"sub":"00000000-0000-0000-0000-000000000011","email":"ana@demo.dentapp.rs"}'::jsonb,
+   '{"sub":"00000000-0000-0000-0000-000000000011","email":"ana@demo.dentapp.rs","email_verified":true}'::jsonb,
    'email', now(), now(), now()),
   (gen_random_uuid(), '00000000-0000-0000-0000-000000000012', 'marko@demo.dentapp.rs',
-   '{"sub":"00000000-0000-0000-0000-000000000012","email":"marko@demo.dentapp.rs"}'::jsonb,
+   '{"sub":"00000000-0000-0000-0000-000000000012","email":"marko@demo.dentapp.rs","email_verified":true}'::jsonb,
    'email', now(), now(), now()),
   (gen_random_uuid(), '00000000-0000-0000-0000-000000000013', 'jelena@demo.dentapp.rs',
-   '{"sub":"00000000-0000-0000-0000-000000000013","email":"jelena@demo.dentapp.rs"}'::jsonb,
+   '{"sub":"00000000-0000-0000-0000-000000000013","email":"jelena@demo.dentapp.rs","email_verified":true}'::jsonb,
    'email', now(), now(), now());
 
 -- =============================================================================
