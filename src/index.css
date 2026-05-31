@@ -1,17 +1,32 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  html {
-    font-family: 'DM Sans', sans-serif;
-  }
+@theme {
+  /* Boje */
+  --color-teal-50: #f0fafa;
+  --color-teal-100: #ccefef;
+  --color-teal-200: #99dfdf;
+  --color-teal-300: #66cfcf;
+  --color-teal-400: #33bfbf;
+  --color-teal-500: #0d9e9e;
+  --color-teal-600: #0B6E6E;
+  --color-teal-700: #095a5a;
+  --color-teal-800: #074545;
+  --color-teal-900: #043030;
 
-  * {
-    @apply border-slate-200;
-  }
+  /* Tipografija */
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
 
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-  }
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
 }

@@ -7,12 +7,32 @@
 | React | 18+ | Ecosystem, Claude Code podrška |
 | Vite | Latest | Brz dev, jednostavan setup |
 | TypeScript | 5+ | Type safety kritična za medicinsku aplikaciju |
-| Tailwind CSS | 3+ | Brz development, konzistentan sistem |
+| Tailwind CSS | 4+ | Brz development, konzistentan sistem, CSS-first konfiguracija |
 | React Router | v6 | SPA routing |
 | TanStack Query | v5 | Server state, caching, optimistic updates |
 | Zustand | Latest | Minimalan client state (AI chat kontekst, session) |
 
-### UI Komponente
+### Tailwind v4 Setup (Vite plugin, ne PostCSS)
+```typescript
+// vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+})
+```
+
+```css
+/* src/index.css — CSS-first konfiguracija, nema tailwind.config.js */
+@import "tailwindcss";
+
+@theme {
+  --color-teal-600: #0B6E6E;
+  --color-teal-700: #095a5a;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+```
 - **Radix UI** (primitivi) + custom Tailwind stilovi — bez heavy component library-ja
 - **Lucide React** za ikone
 - **date-fns** za datum/vreme operacije (srpski locale)

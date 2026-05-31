@@ -14,25 +14,86 @@ Pre svakog taska, pročitaj relevantne dokumente iz `/docs` foldera.
 
 **Cilj:** Prazan ali funkcionalan projekat koji se pokreće lokalno.
 
+**VAŽNO — Tailwind verzija:** Koristimo **Tailwind CSS v4**, ne v3. Setup je drugačiji — nema `tailwind.config.js` po defaultu, nema PostCSS konfiguracije, koristi se `@tailwindcss/vite` plugin. Pročitaj Task 002 pre nego što instaliraš Tailwind.
+
 **Šta uraditi:**
-1. Inicijalizuj Vite + React + TypeScript projekat
-2. Instaliraj i konfiguriši Tailwind CSS v3
-3. Instaliraj zavisnosti: `react-router-dom`, `@tanstack/react-query`, `zustand`, `lucide-react`, `date-fns`, `@supabase/supabase-js`
-4. Inicijalizuj Supabase lokalno (`supabase init`, konfiguriši `config.toml`)
-5. Kreiraj `.env.local` template sa potrebnim varijablama
-6. Postavi osnovnu folder strukturu:
+
+1. Inicijalizuj Vite + React + TypeScript projekat:
+   ```bash
+   npm create vite@latest dentapp -- --template react-ts
+   cd dentapp
    ```
-   src/agent/, src/components/ui/, src/components/layout/
-   src/features/appointments/, src/features/patients/
-   src/features/visits/, src/features/settings/
-   src/lib/, src/types/, src/pages/
-   supabase/migrations/, supabase/functions/
+
+2. Instaliraj Tailwind CSS v4 sa Vite pluginom (ne v3, ne PostCSS):
+   ```bash
+   npm install tailwindcss @tailwindcss/vite
+   ```
+
+3. Instaliraj ostale zavisnosti:
+   ```bash
+   npm install react-router-dom @tanstack/react-query zustand lucide-react date-fns @supabase/supabase-js
+   npm install @radix-ui/react-dialog @radix-ui/react-tooltip @radix-ui/react-dropdown-menu @radix-ui/react-select @radix-ui/react-separator
+   npm install -D @types/node
+   ```
+
+4. Konfiguriši `vite.config.ts` — dodaj Tailwind plugin:
+   ```typescript
+   import { defineConfig } from 'vite'
+   import react from '@vitejs/plugin-react'
+   import tailwindcss from '@tailwindcss/vite'
+
+   export default defineConfig({
+     plugins: [
+       react(),
+       tailwindcss(),
+     ],
+   })
+   ```
+   **NAPOMENA:** Ne dodavaj Tailwind kroz PostCSS (`postcss.config.js`). Isključivo kroz Vite plugin.
+
+5. Inicijalizuj Supabase lokalno:
+   ```bash
+   supabase init
+   ```
+   Konfiguriši `supabase/config.toml` — postavi `project_id = "dentapp"`.
+
+6. Kreiraj `.env.local` fajl (ne commitovati u git):
+   ```
+   VITE_SUPABASE_URL=http://localhost:54321
+   VITE_SUPABASE_ANON_KEY=
+   SUPABASE_SERVICE_ROLE_KEY=
+   ANTHROPIC_API_KEY=
+   ```
+   Anon key i service role key se dobijaju iz `supabase status` outputa posle `supabase start`.
+
+7. Dodaj `.env.local` u `.gitignore`.
+
+8. Postavi folder strukturu:
+   ```
+   src/
+     agent/
+     components/
+       ui/
+       layout/
+     features/
+       appointments/
+       patients/
+       visits/
+       settings/
+     lib/
+     types/
+     pages/
+   supabase/
+     migrations/
+     functions/
    docs/
    ```
-7. Kopiraj sve dokumente iz `/docs` u repo `docs/` folder
-8. Verifikuj da `npm run dev` i `supabase start` rade
 
-**Prihvatanje:** `npm run dev` otvara prazan app, `supabase start` prikazuje lokalni Studio URL.
+9. Kopiraj sve dokumentacione fajlove u `docs/` folder.
+
+10. Verifikuj: `npm run dev` prikazuje Vite welcome screen. `supabase start` prikazuje lokalni Studio URL.
+
+**Prihvatanje:** `npm run dev` otvara prazan app bez grešaka u konzoli. `supabase start` prikazuje lokalni Studio URL i ključeve.
 
 ---
 
@@ -40,43 +101,133 @@ Pre svakog taska, pročitaj relevantne dokumente iz `/docs` foldera.
 
 **Cilj:** Osnovna vizuelna identifikacija i reusable komponente.
 
+**VAŽNO — Tailwind v4 konfiguracija:**
+Tailwind v4 ne koristi `tailwind.config.js` za teme. Sve custom vrednosti definišu se u CSS-u kroz `@theme` direktivu. Ne kreirati `tailwind.config.js` osim ako postoji specifičan razlog.
+
+**Korak 1 — Postavi `src/index.css`:**
+```css
+@import "tailwindcss";
+
+@theme {
+  /* Boje */
+  --color-teal-50: #f0fafa;
+  --color-teal-100: #ccefef;
+  --color-teal-200: #99dfdf;
+  --color-teal-300: #66cfcf;
+  --color-teal-400: #33bfbf;
+  --color-teal-500: #0d9e9e;
+  --color-teal-600: #0B6E6E;
+  --color-teal-700: #095a5a;
+  --color-teal-800: #074545;
+  --color-teal-900: #043030;
+
+  /* Tipografija */
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+```
+
+**Korak 2 — Dodaj Google Fonts u `index.html`:**
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+```
+
+**Korak 3 — Postavi globalne stilove u `index.css`** (dodaj ispod @theme bloka):
+```css
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc; /* slate-50 */
+  color: #0f172a; /* slate-900 */
+  -webkit-font-smoothing: antialiased;
+}
+```
+
 **Estetika:**
 - Primarno bela i slate-50 pozadina
 - Akcentna boja: `#0B6E6E` (deep teal) — pouzdana, medicinska
-- Tipografija: Google Fonts — `DM Sans` za UI, `DM Mono` za kodove/vrednosti
-- Border radius: `rounded-md` (8px) standardno, `rounded-lg` (12px) za kartice
-- Shadow: minimalne, samo za floating elemente
+- Tipografija: DM Sans za UI, DM Mono za kodove/ID-ove/medicinske vrednosti
+- Border radius: 8px standardno, 12px za kartice
+- Shadows: minimalne, samo za floating elemente (modali, dropdowni, tooltipovi)
+- Kompaktna gustina informacija — doktori gledaju kratko, sve mora biti odmah vidljivo
 
-**Komponente za kreirati:**
+**Korak 4 — Kreiraj UI komponente** u `src/components/ui/`:
+
+Svaka komponenta je zaseban fajl. Koristi Tailwind utility klase direktno — nema custom CSS osim u `index.css`.
+
 ```
-Button (variant: primary, secondary, ghost, danger; size: sm, md, lg)
-Input (sa label, error state, icon prefix/suffix)
-Textarea
-Select
-Badge (variant: success, warning, danger, neutral, info; + status-specific)
-Card (sa opcionalnim headerom i footerorm)
-Avatar (inicijali ili slika, size: sm, md, lg)
-Spinner (loading indicator)
-Modal (sa Radix Dialog primitiv)
-Tooltip (Radix)
-Dropdown / ContextMenu (Radix)
-Separator
+Button.tsx       — variant: primary | secondary | ghost | danger | outline
+                   size: sm | md | lg
+                   state: loading (sa Spinner), disabled
+
+Input.tsx        — sa label prop, error prop, helperText prop
+                   icon prefix/suffix podrška
+                   error state (crveni border + poruka)
+
+Textarea.tsx     — isti pattern kao Input
+
+Select.tsx       — Radix UI Select primitiv + Tailwind stilovi
+                   label, error state
+
+Badge.tsx        — variant: success | warning | danger | neutral | info
+                   + status badge-ovi za domenske statuse:
+                     appointment: scheduled | completed | cancelled | no_show
+                     arrival: not_arrived | arrived | in_chair
+                     visit: draft | completed
+                     plan: draft | proposed | accepted | in_progress | completed | archived
+
+Card.tsx         — sa opcionalnim header i footer slot-om
+                   padding varijante: sm | md | lg
+
+Avatar.tsx       — prikazuje inicijale ako nema slike
+                   size: sm (24px) | md (32px) | lg (40px) | xl (48px)
+                   boja pozadine generisana iz imena (hash)
+
+Spinner.tsx      — loading indicator, size: sm | md | lg
+
+Modal.tsx        — Radix Dialog primitiv
+                   title, description, children, footer slot
+                   close na Escape i klik van modala
+
+Tooltip.tsx      — Radix Tooltip primitiv, delay 400ms
+
+Dropdown.tsx     — Radix DropdownMenu primitiv
+                   DropdownItem, DropdownSeparator
+
+Separator.tsx    — horizontalna ili vertikalna linija
 ```
 
-**Tailwind konfiguriši sa:**
-```javascript
-// tailwind.config.js
-colors: {
-  teal: { 50:'#f0fafa', 100:'#ccefef', ..., 600:'#0B6E6E', 700:'#095a5a' },
-  slate: { /* default */ }
-}
-fontFamily: {
-  sans: ['DM Sans', 'sans-serif'],
-  mono: ['DM Mono', 'monospace']
-}
+**Korak 5 — Kreiraj `src/pages/DevKitchen.tsx`:**
+
+Stranica koja prikazuje sve komponente sa svim varijantama, za vizuelni pregled tokom razvoja. Ruta: `/dev` (dostupna samo u development modu). Prikazuje svaku komponentu sa labelom varijante iznad nje. Nije potreban Storybook.
+
+**NAPOMENA za Tailwind v4 u komponentama:**
+
+U v4, custom boje definisane u `@theme` direktno su dostupne kao utility klase:
+```tsx
+// Ovo radi jer smo definisali --color-teal-600 u @theme
+<button className="bg-teal-600 hover:bg-teal-700 text-white">
 ```
 
-**Prihvatanje:** Storybook nije potreban. Napravi `src/pages/DevKitchen.tsx` sa svim komponentama prikazanim na jednoj stranici za vizuelni pregled.
+CSS varijable su dostupne i direktno:
+```tsx
+// Alternativno, ako utility klasa nije generisana
+<div style={{ backgroundColor: 'var(--color-teal-600)' }}>
+```
+
+**Prihvatanje:**
+- `/dev` ruta prikazuje sve komponente bez grešaka
+- Button, Input, Badge, Card, Avatar, Modal svi izgledaju konzistentno
+- Teal boje se primenjuju ispravno
+- DM Sans font je aktivan (vidljivo u DevTools → Computed → font-family)
+- Nema `tailwind.config.js` u projektu (osim ako Radix ne zahteva)
 
 ---
 
