@@ -11,7 +11,7 @@ const NAV_ITEMS = [
 
 export function MobileNav() {
   return (
-    <nav className="flex items-center bg-white border-t border-slate-200 shrink-0 lg:hidden">
+    <nav className="flex items-center bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 shrink-0 lg:hidden">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
         <NavLink
           key={href}
@@ -19,13 +19,15 @@ export function MobileNav() {
           className={({ isActive }) =>
             cn(
               'flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition-colors',
-              isActive ? 'text-teal-600' : 'text-slate-400 hover:text-slate-700'
+              isActive
+                ? 'text-teal-600 dark:text-teal-400'
+                : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             )
           }
         >
           {({ isActive }) => (
             <>
-              <Icon className={cn('w-5 h-5', isActive && 'text-teal-600')} />
+              <Icon className={cn('w-5 h-5', isActive && 'text-teal-600 dark:text-teal-400')} />
               <span>{label}</span>
             </>
           )}

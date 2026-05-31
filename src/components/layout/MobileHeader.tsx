@@ -21,10 +21,10 @@ export function MobileHeader() {
   )?.[1] ?? clinic?.name ?? 'DentApp'
 
   return (
-    <header className="flex items-center justify-between h-14 px-4 bg-white border-b border-slate-200 shrink-0 lg:hidden">
+    <header className="flex items-center justify-between h-14 px-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shrink-0 lg:hidden">
       <button
         onClick={openMobileSidebar}
-        className="p-2 -ml-2 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+        className="p-2 -ml-2 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
         aria-label="Otvori meni"
       >
         <Menu className="w-5 h-5" />
@@ -34,12 +34,12 @@ export function MobileHeader() {
         <div className="w-6 h-6 rounded-md bg-teal-600 text-white flex items-center justify-center font-bold text-xs">
           D
         </div>
-        <span className="font-semibold text-slate-800 text-sm">{label}</span>
+        <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{label}</span>
       </div>
 
       <button
         onClick={toggleAgentPanel}
-        className="p-2 -mr-2 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+        className="p-2 -mr-2 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
         aria-label="AI Asistent"
       >
         <Bot className="w-5 h-5" />

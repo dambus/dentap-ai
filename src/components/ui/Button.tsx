@@ -15,13 +15,13 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'bg-teal-600 text-white hover:bg-teal-700 focus-visible:ring-teal-600 shadow-xs',
   secondary:
-    'bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400',
+    'bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:ring-slate-400 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600',
   ghost:
-    'bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400',
+    'bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200',
   danger:
     'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600 shadow-xs',
   outline:
-    'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-400',
+    'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {

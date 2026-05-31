@@ -1,5 +1,6 @@
 export * from './AgentPanelPlaceholder'
 export * from './AppShell'
+export * from './MobileAgentPanel'
 export * from './MobileHeader'
 export * from './MobileNav'
 export * from './MobileSidebar'

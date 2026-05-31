@@ -26,14 +26,14 @@ export function Card({ children, header, footer, padding = 'md', className }: Ca
   return (
     <div
       className={cn(
-        'bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden',
+        'bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden',
         className
       )}
     >
       {header && (
         <div
           className={cn(
-            'border-b border-slate-200 font-medium text-slate-700',
+            'border-b border-slate-200 dark:border-slate-700 font-medium text-slate-700 dark:text-slate-300',
             paddingHeaderFooter[padding]
           )}
         >
@@ -44,7 +44,7 @@ export function Card({ children, header, footer, padding = 'md', className }: Ca
       {footer && (
         <div
           className={cn(
-            'border-t border-slate-200 bg-slate-50',
+            'border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50',
             paddingHeaderFooter[padding]
           )}
         >

@@ -2,6 +2,7 @@ import { Sidebar } from './Sidebar'
 import { MobileHeader } from './MobileHeader'
 import { MobileNav } from './MobileNav'
 import { MobileSidebar } from './MobileSidebar'
+import { MobileAgentPanel } from './MobileAgentPanel'
 import { AgentPanelPlaceholder } from './AgentPanelPlaceholder'
 
 interface AppShellProps {
@@ -10,13 +11,13 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-900">
       {/* Desktop: sidebar levo (lg+) */}
       <div className="hidden lg:flex">
         <Sidebar />
       </div>
 
-      {/* Centralni stub: header (mobile) + main + bottom nav (mobile) */}
+      {/* Centralni stub */}
       <div className="flex flex-col flex-1 min-w-0">
         <MobileHeader />
         <main className="flex-1 overflow-y-auto">
@@ -30,8 +31,9 @@ export function AppShell({ children }: AppShellProps) {
         <AgentPanelPlaceholder />
       </div>
 
-      {/* Mobile/tablet: slide-in drawer */}
+      {/* Mobile/tablet overlays */}
       <MobileSidebar />
+      <MobileAgentPanel />
     </div>
   )
 }

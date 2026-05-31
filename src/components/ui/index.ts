@@ -1,4 +1,5 @@
 export * from './Avatar'
+export * from './ThemeToggle'
 export * from './Badge'
 export * from './Button'
 export * from './Card'

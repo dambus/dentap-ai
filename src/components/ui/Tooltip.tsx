@@ -25,7 +25,8 @@ export function Tooltip({ content, children, side = 'top', className }: TooltipP
           side={side}
           sideOffset={6}
           className={cn(
-            'z-50 rounded-md bg-slate-900 px-2.5 py-1.5 text-xs text-white shadow-md',
+            'z-50 rounded-md px-2.5 py-1.5 text-xs shadow-md',
+            'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900',
             'animate-in fade-in-0 zoom-in-95',
             'data-[side=bottom]:slide-in-from-top-2',
             'data-[side=top]:slide-in-from-bottom-2',
@@ -35,7 +36,7 @@ export function Tooltip({ content, children, side = 'top', className }: TooltipP
           )}
         >
           {content}
-          <RadixTooltip.Arrow className="fill-slate-900" />
+          <RadixTooltip.Arrow className="fill-slate-900 dark:fill-slate-100" />
         </RadixTooltip.Content>
       </RadixTooltip.Portal>
     </RadixTooltip.Root>

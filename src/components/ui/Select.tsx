@@ -38,7 +38,7 @@ export function Select({
   return (
     <div className={cn('flex flex-col gap-1', className)}>
       {label && (
-        <label htmlFor={selectId} className="text-sm font-medium text-slate-700">
+        <label htmlFor={selectId} className="text-sm font-medium text-slate-700 dark:text-slate-300">
           {label}
         </label>
       )}
@@ -49,8 +49,12 @@ export function Select({
             'flex h-9 w-full items-center justify-between rounded-md border bg-white px-3 text-sm',
             'transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-0',
             'disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed',
-            'data-[placeholder]:text-slate-400',
-            error ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
+            'data-placeholder:text-slate-400',
+            'dark:bg-slate-800 dark:text-slate-100 dark:data-placeholder:text-slate-500',
+            'dark:disabled:bg-slate-900',
+            error
+              ? 'border-red-400 focus:ring-red-400'
+              : 'border-slate-300 dark:border-slate-600 dark:focus:ring-teal-500'
           )}
         >
           <RadixSelect.Value placeholder={placeholder} />
@@ -62,8 +66,10 @@ export function Select({
         <RadixSelect.Portal>
           <RadixSelect.Content
             className={cn(
-              'z-50 min-w-[8rem] overflow-hidden rounded-md border border-slate-200',
-              'bg-white shadow-md animate-in fade-in-0 zoom-in-95'
+              'z-50 min-w-32 overflow-hidden rounded-md border',
+              'border-slate-200 dark:border-slate-700',
+              'bg-white dark:bg-slate-800 shadow-md',
+              'animate-in fade-in-0 zoom-in-95'
             )}
             position="popper"
             sideOffset={4}
@@ -75,10 +81,10 @@ export function Select({
                   value={opt.value}
                   disabled={opt.disabled}
                   className={cn(
-                    'relative flex cursor-default select-none items-center rounded px-2 py-1.5 pl-7 text-sm',
-                    'text-slate-700 outline-none',
-                    'focus:bg-teal-50 focus:text-teal-700',
-                    'data-[disabled]:pointer-events-none data-[disabled]:opacity-40'
+                    'relative flex cursor-default select-none items-center rounded px-2 py-1.5 pl-7 text-sm outline-none',
+                    'text-slate-700 dark:text-slate-200',
+                    'focus:bg-teal-50 focus:text-teal-700 dark:focus:bg-teal-900/30 dark:focus:text-teal-300',
+                    'data-disabled:pointer-events-none data-disabled:opacity-40'
                   )}
                 >
                   <span className="absolute left-2 flex items-center">
@@ -94,8 +100,8 @@ export function Select({
         </RadixSelect.Portal>
       </RadixSelect.Root>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
-      {!error && helperText && <p className="text-xs text-slate-500">{helperText}</p>}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {!error && helperText && <p className="text-xs text-slate-500 dark:text-slate-400">{helperText}</p>}
     </div>
   )
 }

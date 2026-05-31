@@ -12,7 +12,7 @@ export function Separator({ orientation = 'horizontal', className }: SeparatorPr
       orientation={orientation}
       decorative
       className={cn(
-        'bg-slate-200 shrink-0',
+        'bg-slate-200 dark:bg-slate-700 shrink-0',
         orientation === 'horizontal' ? 'h-px w-full' : 'w-px h-full',
         className
       )}
