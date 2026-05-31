@@ -3,9 +3,7 @@ import { Card, Badge } from '../../../components/ui'
 import type { VisitProcedure } from '../hooks/useVisitProcedures'
 
 interface ProcedureCardProps {
-  procedure: VisitProcedure & {
-    service?: { name: string; category: string; estimated_cost: number | null } | null
-  }
+  procedure: VisitProcedure
   onDelete?: () => void
 }
 
@@ -14,10 +12,7 @@ export function ProcedureCard({ procedure, onDelete }: ProcedureCardProps) {
     <Card className="flex items-start justify-between gap-3">
       <div className="flex-1">
         <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {procedure.service?.name ?? 'Usluga'}
-        </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          {procedure.service?.category}
+          {procedure.description ?? 'Procedura'}
         </p>
         {procedure.tooth_fdi && (
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">

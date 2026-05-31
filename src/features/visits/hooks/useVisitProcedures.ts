@@ -10,10 +10,7 @@ export function useVisitProcedures(visitId: string) {
     queryFn: async (): Promise<VisitProcedure[]> => {
       const { data, error } = await supabase
         .from('visit_procedures')
-        .select(`
-          *,
-          service:services ( id, name, category, estimated_cost )
-        `)
+        .select('*')
         .eq('visit_id', visitId)
         .order('created_at')
 
