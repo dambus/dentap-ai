@@ -37,7 +37,7 @@ export function DevKitchen() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8">
+      <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-10 flex items-start justify-between">
             <div>

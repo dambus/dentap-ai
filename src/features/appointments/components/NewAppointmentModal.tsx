@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { format, addMinutes, isBefore, startOfMinute } from 'date-fns'
+import { format, addMinutes } from 'date-fns'
 import { useAuthStore } from '../../../store/authStore'
 import { useDoctors } from '../hooks/useDoctors'
 import { useCreateAppointment } from '../hooks/useCreateAppointment'
@@ -35,6 +35,17 @@ function buildDateTimeISO(date: string, time: string): string {
   return new Date(`${date}T${time}`).toISOString()
 }
 
+// Uvek vraća vreme u budućnosti — zaokružuje NAVIŠE na sledeći 30-minutni slot
+function nextSlotTime(base?: Date): string {
+  const now = base ?? new Date()
+  const min = now.getMinutes()
+  const roundedMin = Math.ceil((min + 1) / 30) * 30
+  const totalMin = now.getHours() * 60 + roundedMin
+  const h = Math.floor(totalMin / 60) % 24
+  const m = totalMin % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
 function toLocalDateString(d: Date) {
   return format(d, 'yyyy-MM-dd')
 }
@@ -57,7 +68,7 @@ export function NewAppointmentModal({
   const [doctorId, setDoctorId] = useState('')
   const [date, setDate] = useState(toLocalDateString(initialDate ?? new Date()))
   const [time, setTime] = useState(
-    toLocalTimeString(initialDate ?? (() => { const d = new Date(); d.setMinutes(0,0,0); return d })())
+    initialDate ? toLocalTimeString(initialDate) : nextSlotTime()
   )
   const [duration, setDuration] = useState('30')
   const [appointmentType, setAppointmentType] = useState('regular')
@@ -71,7 +82,7 @@ export function NewAppointmentModal({
       setPatient(null)
       setDoctorId(initialDoctorId ?? (profile?.is_doctor ? (profile?.id ?? '') : (doctors[0]?.id ?? '')))
       setDate(toLocalDateString(initialDate ?? new Date()))
-      setTime(toLocalTimeString(initialDate ?? (() => { const d = new Date(); d.setMinutes(0,0,0); return d })()))
+      setTime(initialDate ? toLocalTimeString(initialDate) : nextSlotTime())
       setDuration('30')
       setAppointmentType('regular')
       setNotes('')
@@ -98,13 +109,6 @@ export function NewAppointmentModal({
     if (!doctorId) newErrors.doctor = 'Izaberite doktora'
     if (!date) newErrors.date = 'Unesite datum'
     if (!time) newErrors.time = 'Unesite vreme'
-
-    if (date && time) {
-      const startsAt = new Date(`${date}T${time}`)
-      if (isBefore(startsAt, startOfMinute(new Date()))) {
-        newErrors.time = 'Termin ne može biti u prošlosti'
-      }
-    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
