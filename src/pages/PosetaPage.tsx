@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useVisit } from '../features/visits/hooks/useVisit'
 import { VisitHeader } from '../features/visits/components/VisitHeader'
 import { TabPregled } from '../features/visits/components/TabPregled'
+import { TabProcedure } from '../features/visits/components/TabProcedure'
 import { Spinner } from '../components/ui'
 import { cn } from '../lib/utils'
 
@@ -73,11 +74,7 @@ export function PosetaPage() {
       {/* Tab sadržaj */}
       <div className="flex-1 overflow-y-auto">
         {tab === 'pregled' && <TabPregled visit={visit} />}
-        {tab === 'proceduri' && (
-          <div className="p-4 text-slate-500 dark:text-slate-400">
-            Procedure — Task 013
-          </div>
-        )}
+        {tab === 'proceduri' && <TabProcedure visit={visit} />}
         {tab === 'lecenje' && (
           <div className="p-4 text-slate-500 dark:text-slate-400">
             Lečenje — Task 014
