@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { getHours, getMinutes, isToday } from 'date-fns'
+import { getHours, getMinutes, isToday, setHours, setMinutes } from 'date-fns'
 import { cn } from '../../../lib/utils'
 import { AppointmentCard } from './AppointmentCard'
 import type { AppointmentWithRelations } from '../hooks/useAppointments'
@@ -11,6 +11,7 @@ interface DailyCalendarProps {
   doctors: DoctorOption[]
   selectedDoctorIds: string[]
   onAppointmentClick?: (appointment: AppointmentWithRelations) => void
+  onSlotClick?: (slotDate: Date, doctorId: string) => void
 }
 
 const HOUR_HEIGHT = 64 // px per hour
@@ -43,6 +44,7 @@ export function DailyCalendar({
   doctors,
   selectedDoctorIds,
   onAppointmentClick,
+  onSlotClick,
 }: DailyCalendarProps) {
   const [nowTop, setNowTop] = useState(getCurrentTimeTop)
   const nowRef = useRef<HTMLDivElement>(null)
@@ -156,7 +158,21 @@ export function DailyCalendar({
                   </div>
 
                   {/* Termini */}
-                  <div className="relative" style={{ height: totalHeight }}>
+                  <div
+                    className="relative"
+                    style={{ height: totalHeight }}
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('button')) return
+                      if (!onSlotClick) return
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const y = e.clientY - rect.top
+                      const totalMin = Math.round((y / HOUR_HEIGHT) * 60 / 15) * 15 + START_HOUR * 60
+                      const hours = Math.min(Math.max(Math.floor(totalMin / 60), START_HOUR), END_HOUR - 1)
+                      const minutes = totalMin % 60
+                      const slotDate = setMinutes(setHours(new Date(date), hours), minutes)
+                      onSlotClick(slotDate, doctor.id)
+                    }}
+                  >
                     {doctorAppointments.length === 0 && (
                       <p className="text-[11px] text-slate-300 dark:text-slate-600 text-center mt-4 select-none">
                         Nema termina

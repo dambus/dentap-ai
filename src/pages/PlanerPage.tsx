@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarDays, LayoutGrid, RefreshCw } from 'lucide-react'
+import { CalendarDays, LayoutGrid, RefreshCw, Plus } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useAppointments } from '../features/appointments/hooks/useAppointments'
 import { useWeekAppointments } from '../features/appointments/hooks/useWeekAppointments'
@@ -9,14 +9,23 @@ import { WeeklyCalendar } from '../features/appointments/components/WeeklyCalend
 import { DateNavigation } from '../features/appointments/components/DateNavigation'
 import { WeekNavigation } from '../features/appointments/components/WeekNavigation'
 import { DoctorFilter } from '../features/appointments/components/DoctorFilter'
-import { Spinner } from '../components/ui'
+import { NewAppointmentModal } from '../features/appointments/components/NewAppointmentModal'
+import { Button, Spinner } from '../components/ui'
 import { cn } from '../lib/utils'
+import type { AppointmentWithRelations } from '../features/appointments/hooks/useAppointments'
 
 type PlanerView = 'day' | 'week'
+
+interface SlotClickData {
+  date: Date
+  doctorId: string
+}
 
 export function PlanerPage() {
   const [date, setDate] = useState<Date>(() => new Date())
   const [view, setView] = useState<PlanerView>('day')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [slotData, setSlotData] = useState<SlotClickData | null>(null)
   const profile = useAuthStore((s) => s.profile)
 
   const { data: doctors = [], isLoading: loadingDoctors } = useDoctors()
@@ -36,9 +45,28 @@ export function PlanerPage() {
   const activeQuery = view === 'day' ? dailyQuery : weeklyQuery
   const isLoading = loadingDoctors || activeQuery.isLoading
 
+  function handleSlotClick(slotDate: Date, doctorId: string) {
+    setSlotData({ date: slotDate, doctorId })
+    setModalOpen(true)
+  }
+
+  function handleAppointmentClick(_appt: AppointmentWithRelations) {
+    // Task 008 — operativni workflow
+  }
+
   function handleDayClick(day: Date) {
     setDate(day)
     setView('day')
+  }
+
+  function openNewModal() {
+    setSlotData(null)
+    setModalOpen(true)
+  }
+
+  function closeModal() {
+    setModalOpen(false)
+    setSlotData(null)
   }
 
   return (
@@ -54,7 +82,7 @@ export function PlanerPage() {
           )}
         </div>
 
-        {/* Desna strana: filter + view toggle + refresh */}
+        {/* Desna strana */}
         <div className="flex items-center gap-2 flex-wrap">
           <DoctorFilter
             doctors={doctors}
@@ -99,6 +127,11 @@ export function PlanerPage() {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+
+          <Button size="sm" onClick={openNewModal}>
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Novi termin</span>
+          </Button>
         </div>
       </div>
 
@@ -115,6 +148,8 @@ export function PlanerPage() {
             appointments={dailyQuery.data ?? []}
             doctors={doctors}
             selectedDoctorIds={effectiveDoctorIds}
+            onAppointmentClick={handleAppointmentClick}
+            onSlotClick={handleSlotClick}
           />
         </div>
       ) : (
@@ -125,9 +160,17 @@ export function PlanerPage() {
             doctors={doctors}
             selectedDoctorIds={effectiveDoctorIds}
             onDayClick={handleDayClick}
+            onAppointmentClick={handleAppointmentClick}
           />
         </div>
       )}
+
+      <NewAppointmentModal
+        open={modalOpen}
+        onClose={closeModal}
+        initialDate={slotData?.date}
+        initialDoctorId={slotData?.doctorId}
+      />
     </div>
   )
 }
