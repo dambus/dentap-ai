@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query'
 import { useAuthStore } from './store/authStore'
+import { supabase } from './lib/supabase'
 import { ProtectedRoute, AppShell } from './components/layout'
 import { Spinner } from './components/ui'
 import { LoginPage } from './pages/LoginPage'
@@ -14,25 +15,62 @@ import { PodesavanjaPage } from './pages/PodesavanjaPage'
 import { DevKitchen } from './pages/DevKitchen'
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      const msg = (error as Error)?.message?.toLowerCase() ?? ''
+      if (msg.includes('jwt') || msg.includes('expired') || msg.includes('unauthorized') || msg.includes('invalid token')) {
+        useAuthStore.getState().signOut()
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60,
-      retry: 1,
+      retry: (failureCount, error) => {
+        const msg = (error as Error)?.message?.toLowerCase() ?? ''
+        // Auth greške — ne ponavljaj, odmah odustaj
+        if (msg.includes('jwt') || msg.includes('expired') || msg.includes('unauthorized')) {
+          return false
+        }
+        return failureCount < 1
+      },
     },
   },
 })
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const initialize = useAuthStore((s) => s.initialize)
+  const signOut = useAuthStore((s) => s.signOut)
   const isInitialized = useAuthStore((s) => s.isInitialized)
 
   useEffect(() => {
     initialize()
   }, [initialize])
 
+  // Kad korisnik vrati tab u fokus posle neaktivnosti — proveri sesiju.
+  // Supabase background timer može biti throttlovan od strane browsera pa se
+  // access token ne refresh-uje na vreme → queriji vise → beskonačni spinner.
+  // Eksplicitni getSession() "odblokira" pending refresh pre nego što queriji krenu.
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          await signOut()
+        }
+      } catch {
+        await signOut()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [signOut])
+
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
+      <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
         <Spinner size="lg" className="text-teal-600" />
       </div>
     )
