@@ -54,6 +54,29 @@ export function useUpdateVisit() {
   })
 }
 
+export function useDeleteVisit() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (visitId: string) => {
+      const { error: procError } = await supabase
+        .from('visit_procedures')
+        .delete()
+        .eq('visit_id', visitId)
+
+      if (procError) throw procError
+
+      const { error } = await supabase.from('visits').delete().eq('id', visitId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['visits'] })
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+    },
+  })
+}
+
 export function useCompleteVisit() {
   const queryClient = useQueryClient()
 

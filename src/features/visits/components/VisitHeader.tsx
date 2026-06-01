@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Calendar, Stethoscope, CheckCircle2, ArrowLeft } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Calendar, Stethoscope, CheckCircle2, ArrowLeft, Trash2 } from 'lucide-react'
 import { Badge, Button, VisitStatusBadge } from '../../../components/ui'
 import { CompleteVisitModal } from './CompleteVisitModal'
+import { useDeleteVisit } from '../hooks/useVisit'
 import { formatDateTime } from '../../../lib/date'
 import type { VisitDetail } from '../hooks/useVisit'
 
@@ -14,8 +15,24 @@ interface VisitHeaderProps {
 }
 
 export function VisitHeader({ visit }: VisitHeaderProps) {
+  const navigate = useNavigate()
   const [showCompleteModal, setShowCompleteModal] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const deleteVisit = useDeleteVisit()
   const isDraft = visit.status === 'draft'
+
+  async function handleDelete() {
+    try {
+      await deleteVisit.mutateAsync(visit.id)
+      if (visit.patient?.id) {
+        navigate(`/pacijenti/${visit.patient.id}`)
+      } else {
+        navigate('/planer')
+      }
+    } catch {
+      // error state iz mutation
+    }
+  }
 
   return (
     <>
@@ -29,13 +46,21 @@ export function VisitHeader({ visit }: VisitHeaderProps) {
             {visit.patient.last_name} {visit.patient.first_name}
           </Link>
         )}
+
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1">
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
               Poseta —{' '}
-              {visit.patient
-                ? `${visit.patient.last_name} ${visit.patient.first_name}`
-                : 'N/A'}
+              {visit.patient?.id ? (
+                <Link
+                  to={`/pacijenti/${visit.patient.id}`}
+                  className="hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                >
+                  {visit.patient.last_name} {visit.patient.first_name}
+                </Link>
+              ) : (
+                'N/A'
+              )}
             </h1>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-2">
@@ -57,17 +82,47 @@ export function VisitHeader({ visit }: VisitHeaderProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <VisitStatusBadge status={visit.status as 'draft' | 'completed'} />
+
             {isDraft && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setShowCompleteModal(true)}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                Završi posetu
-              </Button>
+              <>
+                {confirmDelete ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <span className="text-xs text-red-700 dark:text-red-300">Obrisati posetу?</span>
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleteVisit.isPending}
+                      className="text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 transition-colors"
+                    >
+                      {deleteVisit.isPending ? 'Brišem...' : 'Obriši'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                    >
+                      Otkaži
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Obriši posetу"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowCompleteModal(true)}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                  Završi posetu
+                </Button>
+              </>
             )}
           </div>
         </div>
