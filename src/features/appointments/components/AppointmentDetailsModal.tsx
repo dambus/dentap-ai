@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   Phone, Clock, User, AlertTriangle, ChevronRight,
-  UserCheck, Armchair, Play, Ban, UserX, Stethoscope,
+  UserCheck, Armchair, Play, Ban, UserX, Stethoscope, ExternalLink,
 } from 'lucide-react'
 import { useAuthStore } from '../../../store/authStore'
 import { useUpdateAppointmentStatus } from '../hooks/useUpdateAppointmentStatus'
@@ -196,6 +196,18 @@ export function AppointmentDetailsModal({ appointment, onClose }: AppointmentDet
               <span>{appt.doctor?.display_name ?? `${appt.doctor?.first_name} ${appt.doctor?.last_name}`}</span>
             </DetailRow>
 
+            {appt.patient_id && (
+              <DetailRow icon={<ExternalLink className="w-4 h-4" />}>
+                <Link
+                  to={`/pacijenti/${appt.patient_id}`}
+                  onClick={handleClose}
+                  className="text-teal-600 dark:text-teal-400 hover:underline text-sm"
+                >
+                  Otvori karton pacijenta
+                </Link>
+              </DetailRow>
+            )}
+
             {appt.patient?.phone && (
               <DetailRow icon={<Phone className="w-4 h-4" />}>
                 <a
@@ -270,62 +282,78 @@ interface ActionButtonsProps {
 function ActionButtons({
   arrivalStatus, onArrived, onInChair, onStartVisit, onNoShow, onCancel, isPending,
 }: ActionButtonsProps) {
+  const isActive = arrivalStatus !== 'completed'
+
   return (
-    <div className={cn('flex items-center gap-2 w-full', 'flex-wrap justify-between sm:flex-nowrap')}>
-      {/* Sekundarne akcije */}
-      <div className="flex gap-2">
-        {arrivalStatus !== 'completed' && (
-          <>
+    <div className="flex flex-col gap-2 w-full">
+      {/* Primarna akcija — uvek vidljiva za aktivne termine */}
+      {isActive && (
+        <Button size="sm" loading={isPending} onClick={onStartVisit} className="w-full justify-center">
+          <Play className="w-3.5 h-3.5" />
+          Počni posetu
+        </Button>
+      )}
+
+      {/* Sekundarni tracking dolaska (opciono) */}
+      {isActive && (
+        <div className="flex items-center gap-2 justify-between">
+          <div className="flex gap-1.5">
+            {arrivalStatus === 'not_arrived' && (
+              <button
+                onClick={onArrived}
+                disabled={isPending}
+                className="text-xs text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 flex items-center gap-1 transition-colors"
+              >
+                <UserCheck className="w-3 h-3" />
+                Pacijent stigao
+              </button>
+            )}
+            {arrivalStatus === 'arrived' && (
+              <button
+                onClick={onInChair}
+                disabled={isPending}
+                className="text-xs text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 flex items-center gap-1 transition-colors"
+              >
+                <Armchair className="w-3 h-3" />
+                Uvesti u stolicu
+              </button>
+            )}
+            {arrivalStatus === 'in_chair' && (
+              <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                <Armchair className="w-3 h-3" />
+                U stolici
+              </span>
+            )}
+          </div>
+
+          <div className="flex gap-1.5">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onNoShow}
               disabled={isPending}
-              className="text-slate-500 dark:text-slate-400"
+              className="text-xs text-slate-400"
             >
-              <UserX className="w-3.5 h-3.5" />
+              <UserX className="w-3 h-3" />
               <span className="hidden sm:inline">Nije došao</span>
             </Button>
             <Button
-              variant="danger"
+              variant="ghost"
               size="sm"
               onClick={onCancel}
               disabled={isPending}
+              className="text-xs text-red-400 hover:text-red-600"
             >
-              <Ban className="w-3.5 h-3.5" />
+              <Ban className="w-3 h-3" />
               <span className="hidden sm:inline">Otkaži</span>
             </Button>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
-      {/* Primarna akcija */}
-      <div className="ml-auto">
-        {arrivalStatus === 'not_arrived' && (
-          <Button size="sm" loading={isPending} onClick={onArrived}>
-            <UserCheck className="w-3.5 h-3.5" />
-            Pacijent stigao
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Button>
-        )}
-        {arrivalStatus === 'arrived' && (
-          <Button size="sm" loading={isPending} onClick={onInChair}>
-            <Armchair className="w-3.5 h-3.5" />
-            Uvesti pacijenta
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Button>
-        )}
-        {arrivalStatus === 'in_chair' && (
-          <Button size="sm" loading={isPending} onClick={onStartVisit}>
-            <Play className="w-3.5 h-3.5" />
-            Počni posetu
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Button>
-        )}
-        {arrivalStatus === 'completed' && (
-          <Badge variant="success">Poseta završena</Badge>
-        )}
-      </div>
+      {arrivalStatus === 'completed' && (
+        <Badge variant="success">Poseta završena</Badge>
+      )}
     </div>
   )
 }

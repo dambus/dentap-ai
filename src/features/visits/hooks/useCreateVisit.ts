@@ -6,7 +6,7 @@ interface NewVisitData {
   clinic_id: string
   patient_id: string
   doctor_id: string
-  appointment_id: string
+  appointment_id?: string | null
   visit_date: string
   created_by: string
 }
@@ -16,14 +16,16 @@ export function useCreateVisit() {
 
   return useMutation({
     mutationFn: async (data: NewVisitData) => {
-      // Proveri da li vec postoji poseta za ovaj termin
-      const { data: existing } = await supabase
-        .from('visits')
-        .select('id')
-        .eq('appointment_id', data.appointment_id)
-        .maybeSingle()
+      // Ako postoji termin, proveri da li poseta već postoji za njega
+      if (data.appointment_id) {
+        const { data: existing } = await supabase
+          .from('visits')
+          .select('id')
+          .eq('appointment_id', data.appointment_id)
+          .maybeSingle()
 
-      if (existing) return existing
+        if (existing) return existing
+      }
 
       const { data: visit, error } = await supabase
         .from('visits')

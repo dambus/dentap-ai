@@ -1,4 +1,5 @@
-import { Calendar, FileText, ClipboardList } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Calendar, FileText, ClipboardList, ArrowRight } from 'lucide-react'
 import { Card, Spinner, Badge } from '../../../components/ui'
 import { formatDateTime, formatDate } from '../../../lib/date'
 import { usePatientNextAppointment, usePatientLastVisit, usePatientActivePlan } from '../hooks/usePatientOverview'
@@ -58,6 +59,13 @@ export function TabPregled({ patientId }: TabPregledProps) {
                 <span className="font-medium">Dijagnoza:</span> {lastVisit.diagnosis}
               </p>
             )}
+            <Link
+              to={`/posete/${lastVisit.id}`}
+              className="inline-flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400 hover:underline mt-1"
+            >
+              Otvori posetу
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
         ) : (
           <p className="text-sm text-slate-500 dark:text-slate-400">Nema završenih poseta</p>

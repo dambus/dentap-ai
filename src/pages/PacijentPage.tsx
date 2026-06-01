@@ -72,7 +72,7 @@ export function PacijentPage() {
         {tab === 'odontogram' && (
           <TabOdontogram patientId={patient.id} clinicId={patient.clinic_id} />
         )}
-        {tab === 'posete' && <TabPosete patientId={patient.id} />}
+        {tab === 'posete' && <TabPosete patientId={patient.id} clinicId={patient.clinic_id} />}
         {tab === 'plan' && (
           <TabPlanLecenja patientId={patient.id} clinicId={patient.clinic_id} />
         )}

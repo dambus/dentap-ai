@@ -492,7 +492,7 @@ Modal / dedicated page:
 **Cilj:** Doktor završava posetу i sve se zabeležuje.
 
 **Šta uraditi:**
-1. "Završi posetу" dugme
+1. "Završi posetu" dugme
 2. Review ekran: pregled svega što je uneto
 3. Potvrda → visit status = `completed`, appointment status = `completed`
 4. Success state sa opcijama: "Zakaži sledeći termin", "Nazad na planer", "Ostani na kartonu"

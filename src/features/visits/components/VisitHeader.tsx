@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Calendar, Stethoscope, CheckCircle2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Calendar, Stethoscope, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { Badge, Button, VisitStatusBadge } from '../../../components/ui'
 import { CompleteVisitModal } from './CompleteVisitModal'
 import { formatDateTime } from '../../../lib/date'
@@ -18,7 +19,16 @@ export function VisitHeader({ visit }: VisitHeaderProps) {
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 pt-3 pb-4">
+        {visit.patient?.id && (
+          <Link
+            to={`/pacijenti/${visit.patient.id}`}
+            className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors mb-3"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            {visit.patient.last_name} {visit.patient.first_name}
+          </Link>
+        )}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1">
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
