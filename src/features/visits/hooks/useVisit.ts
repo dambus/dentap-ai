@@ -12,7 +12,7 @@ export function useVisit(visitId: string) {
         .from('visits')
         .select(`
           *,
-          patient:patients ( first_name, last_name, phone ),
+          patient:patients ( id, first_name, last_name, phone ),
           doctor:profiles!doctor_id ( first_name, last_name, display_name )
         `)
         .eq('id', visitId)
@@ -66,12 +66,18 @@ export function useDeleteVisit() {
 
       if (procError) throw procError
 
-      const { error } = await supabase.from('visits').delete().eq('id', visitId)
+      const { error, count } = await supabase
+        .from('visits')
+        .delete({ count: 'exact' })
+        .eq('id', visitId)
 
       if (error) throw error
+      if (count === 0) throw new Error('Poseta nije obrisana — nema dozvole ili ne postoji.')
     },
     onSuccess: () => {
+      // Prefix match — invalidira sve upite koji počinju sa 'visits' ili 'patient'
       queryClient.invalidateQueries({ queryKey: ['visits'] })
+      queryClient.invalidateQueries({ queryKey: ['patient'] })
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
     },
   })

@@ -18,19 +18,22 @@ export function VisitHeader({ visit }: VisitHeaderProps) {
   const navigate = useNavigate()
   const [showCompleteModal, setShowCompleteModal] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const deleteVisit = useDeleteVisit()
   const isDraft = visit.status === 'draft'
 
   async function handleDelete() {
+    setDeleteError(null)
     try {
       await deleteVisit.mutateAsync(visit.id)
       if (visit.patient?.id) {
-        navigate(`/pacijenti/${visit.patient.id}`)
+        navigate(`/pacijenti/${visit.patient.id}`, { replace: true })
       } else {
-        navigate('/planer')
+        navigate('/planer', { replace: true })
       }
-    } catch {
-      // error state iz mutation
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Greška pri brisanju.')
+      setConfirmDelete(false)
     }
   }
 
@@ -87,6 +90,10 @@ export function VisitHeader({ visit }: VisitHeaderProps) {
 
             {isDraft && (
               <>
+                {deleteError && (
+                  <span className="text-xs text-red-600 dark:text-red-400">{deleteError}</span>
+                )}
+
                 {confirmDelete ? (
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <span className="text-xs text-red-700 dark:text-red-300">Obrisati posetу?</span>
