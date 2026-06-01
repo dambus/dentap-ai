@@ -31,6 +31,9 @@ interface UpdateVisitData {
   diagnosis?: string | null
   clinical_notes?: string | null
   status?: string
+  completed_at?: string | null
+  completed_by?: string | null
+  ended_at?: string | null
 }
 
 export function useUpdateVisit() {
@@ -47,6 +50,48 @@ export function useUpdateVisit() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['visit', variables.visitId] })
+    },
+  })
+}
+
+export function useCompleteVisit() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      visitId,
+      appointmentId,
+      completedBy,
+    }: {
+      visitId: string
+      appointmentId: string | null
+      completedBy: string
+    }) => {
+      const now = new Date().toISOString()
+
+      const { error: visitError } = await supabase
+        .from('visits')
+        .update({
+          status: 'completed',
+          completed_at: now,
+          completed_by: completedBy,
+          ended_at: now,
+        })
+        .eq('id', visitId)
+
+      if (visitError) throw visitError
+
+      if (appointmentId) {
+        await supabase
+          .from('appointments')
+          .update({ status: 'completed', arrival_status: 'completed' })
+          .eq('id', appointmentId)
+      }
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['visit', variables.visitId] })
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['visits'] })
     },
   })
 }

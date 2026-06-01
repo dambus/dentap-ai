@@ -11,6 +11,7 @@ interface TabPregledProps {
 export function TabPregled({ visit }: TabPregledProps) {
   const profile = useAuthStore((s) => s.profile)
   const updateVisit = useUpdateVisit()
+  const isReadOnly = visit.status === 'completed'
 
   const [chiefComplaint, setChiefComplaint] = useState('')
   const [diagnosis, setDiagnosis] = useState('')
@@ -24,7 +25,7 @@ export function TabPregled({ visit }: TabPregledProps) {
   }, [visit])
 
   async function handleSave() {
-    if (!profile) return
+    if (!profile || isReadOnly) return
     setSaved(false)
     try {
       await updateVisit.mutateAsync({
@@ -37,13 +38,19 @@ export function TabPregled({ visit }: TabPregledProps) {
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    } catch (err) {
-      console.error('Greška pri čuvanju:', err)
+    } catch {
+      // error state iz mutation
     }
   }
 
   return (
     <div className="space-y-4 p-4 max-w-3xl">
+      {isReadOnly && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-700 dark:text-green-400">
+          <span>Poseta je završena — sadržaj je zaključan za izmene.</span>
+        </div>
+      )}
+
       <Card>
         <Textarea
           label="Razlog posete"
@@ -51,6 +58,7 @@ export function TabPregled({ visit }: TabPregledProps) {
           onChange={(e) => setChiefComplaint(e.target.value)}
           placeholder="Šta je pacijenta dovelo..."
           rows={2}
+          disabled={isReadOnly}
         />
       </Card>
 
@@ -61,6 +69,7 @@ export function TabPregled({ visit }: TabPregledProps) {
           onChange={(e) => setDiagnosis(e.target.value)}
           placeholder="Stomatološka dijagnoza..."
           rows={2}
+          disabled={isReadOnly}
         />
       </Card>
 
@@ -71,17 +80,20 @@ export function TabPregled({ visit }: TabPregledProps) {
           onChange={(e) => setClinicalNotes(e.target.value)}
           placeholder="Dodatne napomene o tretmanu..."
           rows={3}
+          disabled={isReadOnly}
         />
       </Card>
 
-      <div className="flex items-center gap-2">
-        <Button onClick={handleSave} loading={updateVisit.isPending} disabled={saved}>
-          {saved ? '✓ Sačuvano' : 'Sačuvaj'}
-        </Button>
-        {updateVisit.isError && (
-          <span className="text-sm text-red-600 dark:text-red-400">Greška pri čuvanju</span>
-        )}
-      </div>
+      {!isReadOnly && (
+        <div className="flex items-center gap-2">
+          <Button onClick={handleSave} loading={updateVisit.isPending} disabled={saved}>
+            {saved ? '✓ Sačuvano' : 'Sačuvaj'}
+          </Button>
+          {updateVisit.isError && (
+            <span className="text-sm text-red-600 dark:text-red-400">Greška pri čuvanju</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
