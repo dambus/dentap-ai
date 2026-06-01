@@ -215,7 +215,7 @@ export function TabOdontogram({ patientId, clinicId }: TabOdontogramProps) {
       </div>
 
       {/* Odontogram grid */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 overflow-x-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
         {/* Gornja vilica */}
         <div className="mb-1">
           <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mb-2 text-center">
@@ -400,7 +400,7 @@ function ToothCell({ fdi, status, isSelected, position, onClick }: ToothCellProp
   const numberEl = (
     <span
       className={cn(
-        'text-[9px] font-mono leading-none select-none',
+        'font-mono leading-none select-none text-[clamp(7px,1.8vw,9px)]',
         isSelected ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-400 dark:text-slate-500',
       )}
     >
@@ -411,14 +411,17 @@ function ToothCell({ fdi, status, isSelected, position, onClick }: ToothCellProp
   const toothEl = (
     <div
       className={cn(
-        'w-7 h-8 rounded border-2 flex items-center justify-center transition-all',
+        'rounded border-2 flex items-center justify-center transition-all',
+        'w-[clamp(14px,4vw,28px)] h-[clamp(18px,5vw,32px)]',
         cfg.bg,
         cfg.border,
         isSelected && 'ring-2 ring-teal-500 dark:ring-teal-400 ring-offset-1 dark:ring-offset-slate-800',
       )}
     >
       {cfg.icon && (
-        <span className={cn('text-[8px] font-bold leading-none', cfg.text)}>{cfg.icon}</span>
+        <span className={cn('text-[clamp(6px,1.6vw,8px)] font-bold leading-none', cfg.text)}>
+          {cfg.icon}
+        </span>
       )}
     </div>
   )
