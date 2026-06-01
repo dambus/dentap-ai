@@ -5,15 +5,17 @@ import { PatientHeader } from '../features/patients/components/PatientHeader'
 import { TabPregled } from '../features/patients/components/TabPregled'
 import { TabAnamneza } from '../features/patients/components/TabAnamneza'
 import { TabOdontogram } from '../features/patients/components/TabOdontogram'
+import { TabPlanLecenja } from '../features/patients/components/TabPlanLecenja'
 import { Spinner } from '../components/ui'
 import { cn } from '../lib/utils'
 
-type PatientTab = 'pregled' | 'anamneza' | 'odontogram'
+type PatientTab = 'pregled' | 'anamneza' | 'odontogram' | 'plan'
 
 const TABS: { id: PatientTab; label: string }[] = [
   { id: 'pregled', label: 'Pregled' },
   { id: 'anamneza', label: 'Anamneza' },
   { id: 'odontogram', label: 'Odontogram' },
+  { id: 'plan', label: 'Plan lečenja' },
 ]
 
 export function PacijentPage() {
@@ -67,6 +69,9 @@ export function PacijentPage() {
         )}
         {tab === 'odontogram' && (
           <TabOdontogram patientId={patient.id} clinicId={patient.clinic_id} />
+        )}
+        {tab === 'plan' && (
+          <TabPlanLecenja patientId={patient.id} clinicId={patient.clinic_id} />
         )}
       </div>
     </div>
