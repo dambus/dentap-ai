@@ -600,12 +600,14 @@ export type Database = {
       }
       treatment_plan_items: {
         Row: {
+          appointment_id: string | null
           clinic_id: string
           created_at: string | null
           description: string
           estimated_price: number | null
           id: string
           notes: string | null
+          planned_date: string | null
           priority: number | null
           service_id: string | null
           sort_order: number | null
@@ -615,12 +617,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          appointment_id?: string | null
           clinic_id: string
           created_at?: string | null
           description: string
           estimated_price?: number | null
           id?: string
           notes?: string | null
+          planned_date?: string | null
           priority?: number | null
           service_id?: string | null
           sort_order?: number | null
@@ -630,12 +634,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          appointment_id?: string | null
           clinic_id?: string
           created_at?: string | null
           description?: string
           estimated_price?: number | null
           id?: string
           notes?: string | null
+          planned_date?: string | null
           priority?: number | null
           service_id?: string | null
           sort_order?: number | null

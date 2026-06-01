@@ -365,9 +365,16 @@ function PlanItemRow({ item, patientId, isReadOnly }: PlanItemRowProps) {
             </span>
           )}
         </p>
-        {item.notes && (
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{item.notes}</p>
-        )}
+        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+          {item.planned_date && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              📅 {new Date(item.planned_date).toLocaleDateString('sr-RS')}
+            </span>
+          )}
+          {item.notes && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">{item.notes}</span>
+          )}
+        </div>
       </div>
 
       {/* Cena */}
@@ -441,6 +448,7 @@ function AddItemForm({ planId, patientId, clinicId, onClose }: AddItemFormProps)
   const [toothFdi, setToothFdi] = useState('')
   const [price, setPrice] = useState('')
   const [notes, setNotes] = useState('')
+  const [plannedDate, setPlannedDate] = useState('')
   const [selectedServiceId, setSelectedServiceId] = useState<string>('')
 
   function handleServiceChange(serviceId: string) {
@@ -467,6 +475,7 @@ function AddItemForm({ planId, patientId, clinicId, onClose }: AddItemFormProps)
         service_id: selectedServiceId || null,
         estimated_price: price ? parseFloat(price) : null,
         notes: notes.trim() || null,
+        planned_date: plannedDate || null,
         status: 'planned',
         priority: 0,
         sort_order: 0,
@@ -475,6 +484,7 @@ function AddItemForm({ planId, patientId, clinicId, onClose }: AddItemFormProps)
       setToothFdi('')
       setPrice('')
       setNotes('')
+      setPlannedDate('')
       setSelectedServiceId('')
       onClose()
     } catch {
@@ -540,12 +550,20 @@ function AddItemForm({ planId, patientId, clinicId, onClose }: AddItemFormProps)
           />
         </div>
 
-        <Input
-          label="Napomena"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Opciona napomena..."
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Planirani datum"
+            type="date"
+            value={plannedDate}
+            onChange={(e) => setPlannedDate(e.target.value)}
+          />
+          <Input
+            label="Napomena"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Opciona napomena..."
+          />
+        </div>
 
         <div className="flex items-center gap-2">
           <Button
