@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Calendar, Stethoscope, CheckCircle2, ArrowLeft, Trash2 } from 'lucide-react'
+import { Calendar, Stethoscope, CheckCircle2, ArrowLeft, Trash2, AlertTriangle } from 'lucide-react'
 import { Badge, Button, VisitStatusBadge } from '../../../components/ui'
 import { CompleteVisitModal } from './CompleteVisitModal'
 import { useDeleteVisit } from '../hooks/useVisit'
-import { formatDateTime } from '../../../lib/date'
+import { isVisitStale } from '../hooks/useStaleVisits'
+import { formatDateTime, formatDate } from '../../../lib/date'
 import type { VisitDetail } from '../hooks/useVisit'
 
 interface VisitHeaderProps {
@@ -21,6 +22,7 @@ export function VisitHeader({ visit }: VisitHeaderProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const deleteVisit = useDeleteVisit()
   const isDraft = visit.status === 'draft'
+  const isStale = isDraft && isVisitStale(visit.visit_date)
 
   async function handleDelete() {
     setDeleteError(null)
@@ -48,6 +50,16 @@ export function VisitHeader({ visit }: VisitHeaderProps) {
             <ArrowLeft className="w-3 h-3" />
             {visit.patient.last_name} {visit.patient.first_name}
           </Link>
+        )}
+
+        {isStale && (
+          <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Poseta od <strong>{formatDate(visit.visit_date)}</strong> nije završena.
+              Unesite nalaz i kliknite „Završi posetu".
+            </p>
+          </div>
         )}
 
         <div className="flex items-start justify-between gap-4 flex-wrap">

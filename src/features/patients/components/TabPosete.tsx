@@ -1,10 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Stethoscope, Plus } from 'lucide-react'
+import { ArrowRight, Stethoscope, Plus, AlertTriangle } from 'lucide-react'
 import { useVisitsForPatient } from '../hooks/useVisitsForPatient'
 import { useCreateVisit, todayDateString } from '../../visits/hooks/useCreateVisit'
+import { isVisitStale } from '../../visits/hooks/useStaleVisits'
 import { useAuthStore } from '../../../store/authStore'
 import { Badge, Spinner, Button, VisitStatusBadge } from '../../../components/ui'
 import { formatDate } from '../../../lib/date'
+import { cn } from '../../../lib/utils'
 
 interface TabPoseteProps {
   patientId: string
@@ -67,15 +69,30 @@ export function TabPosete({ patientId, clinicId }: TabPoseteProps) {
               ? `${visit.doctor.first_name} ${visit.doctor.last_name}`
               : 'N/A')
 
+          const stale = visit.status === 'draft' && isVisitStale(visit.visit_date)
+
           return (
             <Link
               key={visit.id}
               to={`/posete/${visit.id}`}
-              className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 hover:shadow-sm transition-all group"
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-xl border transition-all group',
+                stale
+                  ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-300 dark:border-amber-700 hover:border-amber-400 dark:hover:border-amber-600'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 hover:shadow-sm',
+              )}
             >
+              {/* Stale indikator */}
+              {stale && (
+                <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+              )}
+
               {/* Datum */}
               <div className="shrink-0 text-center w-12">
-                <p className="text-lg font-bold font-mono text-slate-800 dark:text-slate-100 leading-none">
+                <p className={cn(
+                  'text-lg font-bold font-mono leading-none',
+                  stale ? 'text-amber-700 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100',
+                )}>
                   {formatDate(visit.visit_date).split('.')[0]}
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500">
@@ -90,6 +107,11 @@ export function TabPosete({ patientId, clinicId }: TabPoseteProps) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <VisitStatusBadge status={visit.status as 'draft' | 'completed'} />
                   <span className="text-xs text-slate-500 dark:text-slate-400">{doctorName}</span>
+                  {stale && (
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                      Nije završena
+                    </span>
+                  )}
                 </div>
                 {visit.chief_complaint && (
                   <p className="text-sm text-slate-700 dark:text-slate-300 mt-0.5 truncate">

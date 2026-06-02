@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { CalendarDays, LayoutGrid, RefreshCw, Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { CalendarDays, LayoutGrid, RefreshCw, Plus, AlertTriangle } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import { useStaleVisits } from '../features/visits/hooks/useStaleVisits'
 import { useAppointments } from '../features/appointments/hooks/useAppointments'
 import { useWeekAppointments } from '../features/appointments/hooks/useWeekAppointments'
 import { useDoctors } from '../features/appointments/hooks/useDoctors'
@@ -30,6 +32,8 @@ export function PlanerPage() {
   const [detailsAppt, setDetailsAppt] = useState<AppointmentWithRelations | null>(null)
   const profile = useAuthStore((s) => s.profile)
 
+  const clinic = useAuthStore((s) => s.clinic)
+  const { data: staleVisits = [] } = useStaleVisits(clinic?.id ?? null)
   const { data: doctors = [], isLoading: loadingDoctors } = useDoctors()
 
   const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>(() => {
@@ -136,6 +140,31 @@ export function PlanerPage() {
           </Button>
         </div>
       </div>
+
+      {/* Upozorenje — nezavršene posete od prethodnih dana */}
+      {staleVisits.length > 0 && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-700 dark:text-amber-300 flex-1">
+            {staleVisits.length === 1
+              ? '1 poseta od prethodnih dana nije završena'
+              : `${staleVisits.length} poseta od prethodnih dana nije završeno`}
+            {' — '}
+            {staleVisits.slice(0, 3).map((v, i) => (
+              <span key={v.id}>
+                {i > 0 && ', '}
+                <Link
+                  to={`/posete/${v.id}`}
+                  className="font-medium underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200"
+                >
+                  {v.patient ? `${v.patient.last_name} ${v.patient.first_name}` : v.visit_date}
+                </Link>
+              </span>
+            ))}
+            {staleVisits.length > 3 && ` i još ${staleVisits.length - 3}`}
+          </p>
+        </div>
+      )}
 
       {/* Sadržaj */}
       {isLoading ? (
