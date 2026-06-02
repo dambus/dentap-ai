@@ -10,7 +10,6 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -18,29 +17,27 @@ Deno.serve(async (req: Request) => {
   try {
     // ─── 1. Verifikacija JWT ───────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return errorResponse('Nedostaje Authorization header.', 401)
-    }
+    if (!authHeader) return errorResponse('Nedostaje Authorization header.', 401)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // Client sa user JWT-om — RLS automatski filtrira po klinici
+    // User JWT client — RLS filtrira po klinici
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
     })
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    // Service role client — SAMO za audit_log (nema INSERT policy za authenticated)
+    const serviceSupabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    })
 
-    if (authError || !user) {
-      return errorResponse('Neautorizovani pristup.', 401)
-    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return errorResponse('Neautorizovani pristup.', 401)
 
-    // ─── 2. Dohvati profil i kliniku ──────────────────────────────────────
+    // ─── 2. Profil i klinika ──────────────────────────────────────────────
     const [profileRes, clinicRes] = await Promise.all([
       supabase
         .from('profiles')
@@ -54,39 +51,34 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
     ])
 
-    if (profileRes.error || !profileRes.data) {
-      return errorResponse('Profil nije pronađen.', 403)
-    }
+    if (profileRes.error || !profileRes.data) return errorResponse('Profil nije pronađen.', 403)
 
     const profile = profileRes.data
     const clinic = clinicRes.data ?? { name: 'Klinika', city: null }
+    const clinicId = (user.app_metadata?.clinic_id as string) ?? ''
 
-    // ─── 3. Parsiraj request ───────────────────────────────────────────────
+    // ─── 3. Request body ──────────────────────────────────────────────────
     const body = await req.json()
-    const messages: Array<{ role: 'user' | 'assistant'; content: string }> =
-      body.messages ?? []
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = body.messages ?? []
     const context: AgentContext = body.context ?? { screen: 'general' }
 
-    if (!messages.length) {
-      return errorResponse('Nema poruka.', 400)
-    }
+    if (!messages.length) return errorResponse('Nema poruka.', 400)
 
-    // ─── 4. Anthropic API ─────────────────────────────────────────────────
+    // ─── 4. Anthropic ─────────────────────────────────────────────────────
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicKey) {
-      return errorResponse('ANTHROPIC_API_KEY nije podešen.', 500)
-    }
+    if (!anthropicKey) return errorResponse('ANTHROPIC_API_KEY nije podešen.', 500)
 
     const anthropic = new Anthropic({ apiKey: anthropicKey })
     const systemPrompt = buildSystemPrompt(profile, clinic, context)
 
-    // Konverzaciona istorija za Anthropic (mora alternirati user/assistant)
     const conversation: Anthropic.MessageParam[] = messages.map((m) => ({
       role: m.role,
       content: m.content,
     }))
 
-    // ─── 5. Agentic loop (tool use) ────────────────────────────────────────
+    // ─── 5. Agentic loop ──────────────────────────────────────────────────
+    const toolCtx = { userId: user.id, clinicId }
+
     let response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 1024,
@@ -106,13 +98,12 @@ Deno.serve(async (req: Request) => {
         toolUseBlocks.map(async (block) => {
           const result = await executeTool(
             block.name,
-            block.input as Record<string, string>,
+            block.input as Record<string, unknown>,
             supabase,
+            serviceSupabase,
+            toolCtx,
           )
-          actionsTaken.push({
-            tool: block.name,
-            summary: `${block.name} izvršen`,
-          })
+          actionsTaken.push({ tool: block.name, summary: `${block.name} izvršen` })
           return {
             type: 'tool_result' as const,
             tool_use_id: block.id,
@@ -133,7 +124,7 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // ─── 6. Izvuci finalni tekst ───────────────────────────────────────────
+    // ─── 6. Finalni odgovor ───────────────────────────────────────────────
     const finalText = response.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')
       .map((b) => b.text)
@@ -145,9 +136,7 @@ Deno.serve(async (req: Request) => {
         response: finalText || 'Nema odgovora od agenta.',
         actions_taken: actionsTaken,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Neočekivana greška.'
