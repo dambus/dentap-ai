@@ -3,14 +3,11 @@ import { Bot, ChevronLeft, ChevronRight, Send, Mic, MicOff } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
 import { useAgentTitle } from '../../agent/useAgentTitle'
+import { useAgentContext } from '../../agent/useAgentContext'
 import { useVoiceInput } from '../../agent/useVoiceInput'
+import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/utils'
 import type { AgentMessage } from '../../agent/types'
-
-// Placeholder odgovor za Task 017 — zameniće se pozivom Edge Function u Task 018
-const PLACEHOLDER_RESPONSE =
-  'Pozdrav! Backend agenta je u pripremi (Task 018). ' +
-  'Uskoro ću moći da odgovaram na pitanja o rasporedu, pacijentima i posetama.'
 
 function generateId() {
   return Math.random().toString(36).slice(2)
@@ -83,6 +80,7 @@ interface AgentChatProps {
 
 export function AgentChat({ compact }: AgentChatProps) {
   const profile = useAuthStore((s) => s.profile)
+  const context = useAgentContext()
   const [messages, setMessages] = useState<AgentMessage[]>([
     {
       id: 'welcome',
@@ -93,6 +91,7 @@ export function AgentChat({ compact }: AgentChatProps) {
   ])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [interimText, setInterimText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -116,20 +115,37 @@ export function AgentChat({ compact }: AgentChatProps) {
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setIsTyping(true)
+    setError(null)
 
-    // Task 018: zameni sa pravim Edge Function pozivom
-    await new Promise((res) => setTimeout(res, 1400))
-    setIsTyping(false)
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: generateId(),
-        role: 'assistant',
-        content: PLACEHOLDER_RESPONSE,
-        timestamp: new Date(),
-      },
-    ])
-  }, [input, isTyping])
+    // Izgradimo konverzacionu istoriju za slanje (samo role + content)
+    const history = [...messages, userMsg].map((m) => ({
+      role: m.role,
+      content: m.content,
+    }))
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('agent', {
+        body: { messages: history, context },
+      })
+
+      if (fnError) throw fnError
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: 'assistant' as const,
+          content: data?.response ?? 'Agent nije vratio odgovor.',
+          timestamp: new Date(),
+        },
+      ])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Greška pri komunikaciji sa agentom.'
+      setError(msg)
+    } finally {
+      setIsTyping(false)
+    }
+  }, [input, isTyping, messages, context])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -160,6 +176,9 @@ export function AgentChat({ compact }: AgentChatProps) {
           <MessageBubble key={msg.id} message={msg} />
         ))}
         {isTyping && <TypingIndicator />}
+        {error && (
+          <p className="px-4 py-2 text-xs text-red-500 dark:text-red-400">{error}</p>
+        )}
         <div ref={bottomRef} />
       </div>
 
