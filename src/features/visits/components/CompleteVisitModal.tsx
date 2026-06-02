@@ -3,6 +3,7 @@ import { CheckCircle2, CalendarPlus, ArrowLeft, User } from 'lucide-react'
 import { useCompleteVisit } from '../hooks/useVisit'
 import { useVisitProcedures } from '../hooks/useVisitProcedures'
 import { useAuthStore } from '../../../store/authStore'
+import { useAgentStore } from '../../../store/agentStore'
 import { Modal, Button, Badge } from '../../../components/ui'
 import { formatDate } from '../../../lib/date'
 import type { VisitDetail } from '../hooks/useVisit'
@@ -20,6 +21,7 @@ export function CompleteVisitModal({ visit, isOpen, onClose }: CompleteVisitModa
   const profile = useAuthStore((s) => s.profile)
   const completeVisit = useCompleteVisit()
   const { data: procedures = [] } = useVisitProcedures(visit.id)
+  const addAgentMessage = useAgentStore((s) => s.addMessage)
 
   const totalPrice = procedures.reduce((sum, p) => sum + (p.price ?? 0), 0)
   const isCompleted = visit.status === 'completed'
@@ -31,6 +33,13 @@ export function CompleteVisitModal({ visit, isOpen, onClose }: CompleteVisitModa
         visitId: visit.id,
         appointmentId: visit.appointment_id ?? null,
         completedBy: profile.id,
+      })
+      // Proaktivni predlog: agent predlaže sledeći termin
+      addAgentMessage({
+        role: 'assistant',
+        content:
+          `Poseta je uspešno završena. ` +
+          `Ako pacijentu treba kontrola ili nastavak lečenja, mogu zakazati sledeći termin — samo reci kad i kod koga.`,
       })
     } catch {
       // error handled by mutation

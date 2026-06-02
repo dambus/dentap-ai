@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePatient } from '../features/patients/hooks/usePatient'
+import { useUIStore } from '../store/uiStore'
+import { useAgentStore } from '../store/agentStore'
 import { PatientHeader } from '../features/patients/components/PatientHeader'
 import { TabPregled } from '../features/patients/components/TabPregled'
 import { TabAnamneza } from '../features/patients/components/TabAnamneza'
@@ -24,6 +26,16 @@ export function PacijentPage() {
   const { id } = useParams<{ id: string }>()
   const [tab, setTab] = useState<PatientTab>('pregled')
   const { data: patient, isLoading } = usePatient(id ?? '')
+
+  // Otvori agent panel i resetuj razgovor kad se otvori novi karton
+  const setAgentPanelOpen = useUIStore((s) => s.setAgentPanelOpen)
+  const resetConversation = useAgentStore((s) => s.resetConversation)
+
+  useEffect(() => {
+    if (!id) return
+    resetConversation()
+    setAgentPanelOpen(true)
+  }, [id, resetConversation, setAgentPanelOpen])
 
   if (isLoading) {
     return (

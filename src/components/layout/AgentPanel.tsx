@@ -1,12 +1,14 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import { Bot, ChevronLeft, ChevronRight, Send, Mic, MicOff } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
+import { useAgentStore } from '../../store/agentStore'
 import { useAgentTitle } from '../../agent/useAgentTitle'
 import { useAgentContext } from '../../agent/useAgentContext'
 import { useVoiceInput } from '../../agent/useVoiceInput'
 import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/utils'
+import { useState } from 'react'
 import type { AgentMessage } from '../../agent/types'
 
 function generateId() {
@@ -25,7 +27,7 @@ function TypingIndicator() {
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-400 animate-bounce"
+            className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"
             style={{ animationDelay: `${i * 150}ms`, animationDuration: '900ms' }}
           />
         ))}
@@ -41,26 +43,17 @@ function MessageBubble({ message }: { message: AgentMessage }) {
 
   return (
     <div className={cn('flex items-end gap-2 px-4 py-1', isUser && 'flex-row-reverse')}>
-      {/* Avatar */}
       <div
         className={cn(
-          'w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold',
-          isUser
-            ? 'bg-teal-600 text-white'
-            : 'bg-teal-100 dark:bg-teal-900/40',
+          'w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold',
+          isUser ? 'bg-teal-600 text-white' : 'bg-teal-100 dark:bg-teal-900/40',
         )}
       >
-        {isUser ? (
-          'Vi'
-        ) : (
-          <Bot className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-        )}
+        {isUser ? 'Vi' : <Bot className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />}
       </div>
-
-      {/* Balon */}
       <div
         className={cn(
-          'max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed',
+          'max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap',
           isUser
             ? 'bg-teal-600 text-white rounded-br-sm'
             : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-sm',
@@ -72,7 +65,7 @@ function MessageBubble({ message }: { message: AgentMessage }) {
   )
 }
 
-// --- Chat sadržaj (deljeno između desktop i mobile panela) ---
+// --- Chat sadržaj ---
 
 interface AgentChatProps {
   compact?: boolean
@@ -81,71 +74,103 @@ interface AgentChatProps {
 export function AgentChat({ compact }: AgentChatProps) {
   const profile = useAuthStore((s) => s.profile)
   const context = useAgentContext()
-  const [messages, setMessages] = useState<AgentMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`,
-      timestamp: new Date(),
-    },
-  ])
+  const isOpen = useUIStore((s) => s.isAgentPanelOpen)
+
+  const { messages, isTyping, lastProactivePatientId, addMessage, setMessages, setTyping, setLastProactivePatientId } =
+    useAgentStore()
+
   const [input, setInput] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [interimText, setInterimText] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-scroll na novu poruku
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
+
+  // ── Proaktivna analiza: resetuj razgovor i pokreni pregled kad se otvori karton ──
+  useEffect(() => {
+    if (
+      context.screen !== 'pacijent' ||
+      !context.patientId ||
+      context.patientId === lastProactivePatientId ||
+      !isOpen
+    )
+      return
+
+    setLastProactivePatientId(context.patientId)
+    setMessages([
+      {
+        id: 'proactive-init',
+        role: 'assistant',
+        content: `Učitavam pregled pacijenta...`,
+        timestamp: new Date(),
+      },
+    ])
+    setTyping(true)
+    setError(null)
+
+    supabase.functions
+      .invoke('agent', {
+        body: {
+          messages: [
+            {
+              role: 'user',
+              content:
+                'Napravi kratki pregled ovog pacijenta pre pregleda: ' +
+                'istaži medicinska upozorenja i alergije, proveri datum poslednje posete ' +
+                '(ako nije bio duže od 6 meseci predloži kontrolu), i podsetni na sledeću ' +
+                'stavku iz aktivnog plana lečenja ako postoji. Budi koncizan (3–5 rečenica).',
+            },
+          ],
+          context,
+        },
+      })
+      .then(({ data, error: fnError }) => {
+        setTyping(false)
+        if (fnError || !data?.response) {
+          setMessages([
+            { id: 'welcome', role: 'assistant', content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`, timestamp: new Date() },
+          ])
+          return
+        }
+        setMessages([{ id: 'proactive', role: 'assistant', content: data.response, timestamp: new Date() }])
+      })
+      .catch(() => {
+        setTyping(false)
+        setMessages([
+          { id: 'welcome', role: 'assistant', content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`, timestamp: new Date() },
+        ])
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [context.patientId, isOpen])
 
   const handleSend = useCallback(async () => {
     const text = input.trim()
     if (!text || isTyping) return
 
-    const userMsg: AgentMessage = {
-      id: generateId(),
-      role: 'user',
-      content: text,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMsg])
+    const userMsg: AgentMessage = { id: generateId(), role: 'user', content: text, timestamp: new Date() }
+    const updatedMessages = [...messages, userMsg]
+    setMessages(updatedMessages)
     setInput('')
-    setIsTyping(true)
+    setTyping(true)
     setError(null)
 
-    // Izgradimo konverzacionu istoriju za slanje (samo role + content)
-    const history = [...messages, userMsg].map((m) => ({
-      role: m.role,
-      content: m.content,
-    }))
+    const history = updatedMessages.map((m) => ({ role: m.role, content: m.content }))
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke('agent', {
         body: { messages: history, context },
       })
-
       if (fnError) throw fnError
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: generateId(),
-          role: 'assistant' as const,
-          content: data?.response ?? 'Agent nije vratio odgovor.',
-          timestamp: new Date(),
-        },
-      ])
+      addMessage({ role: 'assistant', content: data?.response ?? 'Agent nije vratio odgovor.' })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Greška pri komunikaciji sa agentom.'
-      setError(msg)
+      setError(err instanceof Error ? err.message : 'Greška pri komunikaciji sa agentom.')
     } finally {
-      setIsTyping(false)
+      setTyping(false)
     }
-  }, [input, isTyping, messages, context])
+  }, [input, isTyping, messages, context, addMessage, setMessages, setTyping])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -170,22 +195,17 @@ export function AgentChat({ compact }: AgentChatProps) {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Lista poruka */}
       <div className="flex-1 overflow-y-auto py-3 space-y-1">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
         {isTyping && <TypingIndicator />}
-        {error && (
-          <p className="px-4 py-2 text-xs text-red-500 dark:text-red-400">{error}</p>
-        )}
+        {error && <p className="px-4 py-2 text-xs text-red-500 dark:text-red-400">{error}</p>}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="shrink-0 border-t border-slate-200 dark:border-slate-700 p-3">
         <div className="flex items-end gap-2">
-          {/* Mikrofon */}
           {isSupported && (
             <button
               onClick={isListening ? stopListening : startListening}
@@ -195,13 +215,11 @@ export function AgentChat({ compact }: AgentChatProps) {
                   ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 animate-pulse'
                   : 'text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-700',
               )}
-              title={isListening ? 'Zaustavi snimanje' : 'Govorna poruka (Chrome/Edge)'}
+              title={isListening ? 'Zaustavi' : 'Govorna poruka (Chrome/Edge)'}
             >
               {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
           )}
-
-          {/* Textarea */}
           <textarea
             ref={inputRef}
             value={displayInput}
@@ -209,20 +227,17 @@ export function AgentChat({ compact }: AgentChatProps) {
             onKeyDown={handleKeyDown}
             placeholder={isListening ? 'Slušam...' : 'Pitajte agenta...'}
             rows={1}
+            disabled={isTyping}
             className={cn(
               'flex-1 resize-none rounded-xl border px-3 py-2 text-sm',
               'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100',
-              'border-slate-200 dark:border-slate-600',
-              'placeholder:text-slate-400 dark:placeholder:text-slate-500',
+              'border-slate-200 dark:border-slate-600 placeholder:text-slate-400',
               'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
               'max-h-28 overflow-y-auto',
               isListening && 'border-red-300 dark:border-red-700',
             )}
             style={{ lineHeight: '1.4' }}
-            disabled={isTyping}
           />
-
-          {/* Pošalji */}
           <button
             onClick={handleSend}
             disabled={!input.trim() || isTyping}
@@ -237,7 +252,6 @@ export function AgentChat({ compact }: AgentChatProps) {
             <Send className="w-4 h-4" />
           </button>
         </div>
-
         <p className={cn('text-[10px] mt-1.5 text-slate-400 dark:text-slate-600', compact && 'hidden')}>
           Enter — pošalji · Shift+Enter — novi red
           {isSupported && ' · Mikrofon — govorna poruka'}
@@ -263,7 +277,6 @@ export function AgentPanel() {
         isOpen ? 'w-80' : 'w-10',
       )}
     >
-      {/* Toggle dugme */}
       <button
         onClick={toggle}
         className={cn(
@@ -274,30 +287,23 @@ export function AgentPanel() {
         )}
         title={isOpen ? 'Zatvori agent panel' : 'Otvori agent panel'}
       >
-        {isOpen ? (
-          <ChevronRight className="w-3 h-3" />
-        ) : (
-          <ChevronLeft className="w-3 h-3" />
-        )}
+        {isOpen ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
       </button>
 
       {isOpen ? (
         <>
-          {/* Header */}
           <div className="flex items-center gap-2 px-4 h-14 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <Bot className="w-4 h-4 text-teal-600 shrink-0" />
             <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
               {title}
             </span>
           </div>
-
-          {/* Chat */}
           <div className="flex-1 min-h-0">
             <AgentChat />
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center pt-16 gap-3">
+        <div className="flex flex-col items-center pt-16">
           <Bot className="w-4 h-4 text-slate-300 dark:text-slate-600" />
         </div>
       )}

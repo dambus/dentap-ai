@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarDays, LayoutGrid, RefreshCw, Plus, AlertTriangle } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import { useAgentStore } from '../store/agentStore'
 import { useStaleVisits } from '../features/visits/hooks/useStaleVisits'
 import { useAppointments } from '../features/appointments/hooks/useAppointments'
 import { useWeekAppointments } from '../features/appointments/hooks/useWeekAppointments'
@@ -35,6 +36,7 @@ export function PlanerPage() {
   const clinic = useAuthStore((s) => s.clinic)
   const { data: staleVisits = [] } = useStaleVisits(clinic?.id ?? null)
   const { data: doctors = [], isLoading: loadingDoctors } = useDoctors()
+  const addAgentMessage = useAgentStore((s) => s.addMessage)
 
   const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>(() => {
     if (profile?.role === 'owner' || profile?.role === 'reception') return []
@@ -50,6 +52,32 @@ export function PlanerPage() {
 
   const activeQuery = view === 'day' ? dailyQuery : weeklyQuery
   const isLoading = loadingDoctors || activeQuery.isLoading
+
+  // Proaktivno upozorenje: pacijenti sa medicinskim upozorenjima danas
+  useEffect(() => {
+    const appts = dailyQuery.data ?? []
+    const withAlerts = appts.filter(
+      (a) =>
+        a.status === 'scheduled' &&
+        a.patient &&
+        (a.patient as unknown as { medical_alerts?: string }).medical_alerts,
+    )
+    if (withAlerts.length === 0) return
+
+    const names = withAlerts
+      .slice(0, 3)
+      .map((a) => `${a.patient!.last_name} ${a.patient!.first_name}`)
+      .join(', ')
+
+    addAgentMessage({
+      role: 'assistant',
+      content:
+        `⚠️ ${withAlerts.length === 1 ? 'Jedan pacijent ima' : `${withAlerts.length} pacijenata imaju`} medicinska upozorenja u rasporedu za danas: ${names}${withAlerts.length > 3 ? ' i još...' : '.'}` +
+        ` Preporučujem pregled kartona pre pregleda.`,
+    })
+  // Samo jednom pri učitavanju termina za taj dan
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dailyQuery.data])
 
   function handleSlotClick(slotDate: Date, doctorId: string) {
     setSlotData({ date: slotDate, doctorId })
