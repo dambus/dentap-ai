@@ -40,7 +40,7 @@ export function CompleteVisitModal({ visit, isOpen, onClose }: CompleteVisitModa
   if (isCompleted) {
     return (
       <Modal
-        isOpen={isOpen}
+        open={isOpen}
         onClose={onClose}
         title="Poseta završena"
         footer={
@@ -100,7 +100,7 @@ export function CompleteVisitModal({ visit, isOpen, onClose }: CompleteVisitModa
 
   return (
     <Modal
-      isOpen={isOpen}
+      open={isOpen}
       onClose={onClose}
       title="Završi posetu"
       description="Pregled unete dokumentacije pre zatvaranja posete"
