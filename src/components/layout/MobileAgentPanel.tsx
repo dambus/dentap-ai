@@ -1,9 +1,12 @@
 import { X, Bot } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
+import { useAgentTitle } from '../../agent/useAgentTitle'
+import { AgentChat } from './AgentPanel'
 
 export function MobileAgentPanel() {
   const isOpen = useUIStore((s) => s.isAgentPanelOpen)
   const setOpen = useUIStore((s) => s.setAgentPanelOpen)
+  const title = useAgentTitle()
 
   if (!isOpen) return null
 
@@ -21,8 +24,8 @@ export function MobileAgentPanel() {
         <div className="flex items-center justify-between px-4 h-14 border-b border-slate-200 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-teal-600 shrink-0" />
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-              AI Asistent
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+              {title}
             </span>
           </div>
           <button
@@ -33,17 +36,9 @@ export function MobileAgentPanel() {
           </button>
         </div>
 
-        {/* Placeholder */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
-          <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center">
-            <Bot className="w-6 h-6 text-teal-500" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Agent dolazi uskoro
-            </p>
-            <p className="text-xs text-slate-400 mt-1">Task 017–020</p>
-          </div>
+        {/* Chat */}
+        <div className="flex-1 min-h-0">
+          <AgentChat compact />
         </div>
       </aside>
     </div>

@@ -1,4 +1,4 @@
-export * from './AgentPanelPlaceholder'
+export * from './AgentPanel'
 export * from './AppShell'
 export * from './MobileAgentPanel'
 export * from './MobileHeader'

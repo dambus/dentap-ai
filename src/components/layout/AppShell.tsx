@@ -3,7 +3,7 @@ import { MobileHeader } from './MobileHeader'
 import { MobileNav } from './MobileNav'
 import { MobileSidebar } from './MobileSidebar'
 import { MobileAgentPanel } from './MobileAgentPanel'
-import { AgentPanelPlaceholder } from './AgentPanelPlaceholder'
+import { AgentPanel } from './AgentPanel'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -28,7 +28,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Desktop: agent panel desno (lg+) */}
       <div className="hidden lg:flex">
-        <AgentPanelPlaceholder />
+        <AgentPanel />
       </div>
 
       {/* Mobile/tablet overlays */}
