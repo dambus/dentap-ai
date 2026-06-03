@@ -6,7 +6,7 @@ import { useAgentStore } from '../../store/agentStore'
 import { useAgentTitle } from '../../agent/useAgentTitle'
 import { useAgentContext } from '../../agent/useAgentContext'
 import { useVoiceInput } from '../../agent/useVoiceInput'
-import { supabase } from '../../lib/supabase'
+import { invokeAgent } from '../../agent/invokeAgent'
 import { cn } from '../../lib/utils'
 import { useState } from 'react'
 import type { AgentMessage } from '../../agent/types'
@@ -117,31 +117,22 @@ export function AgentChat({ compact }: AgentChatProps) {
       setTyping(true)
       setError(null)
 
-      supabase.functions
-        .invoke('agent', {
-          body: {
-            messages: [
-              {
-                role: 'user',
-                content:
-                  'Napravi kratki pregled ovog pacijenta pre pregleda: ' +
-                  'istaži medicinska upozorenja i alergije, proveri datum poslednje posete ' +
-                  '(ako nije bio duže od 6 meseci predloži kontrolu), i podsetni na sledeću ' +
-                  'stavku iz aktivnog plana lečenja ako postoji. Budi koncizan (3–5 rečenica).',
-              },
-            ],
-            context,
+      invokeAgent({
+        messages: [
+          {
+            role: 'user',
+            content:
+              'Napravi kratki pregled ovog pacijenta pre pregleda: ' +
+              'istaži medicinska upozorenja i alergije, proveri datum poslednje posete ' +
+              '(ako nije bio duže od 6 meseci predloži kontrolu), i podsetni na sledeću ' +
+              'stavku iz aktivnog plana lečenja ako postoji. Budi koncizan (3–5 rečenica).',
           },
-        })
-        .then(({ data, error: fnError }) => {
+        ],
+        context,
+      })
+        .then((result) => {
           setTyping(false)
-          if (fnError || !data?.response) {
-            setMessages([
-              { id: 'welcome', role: 'assistant', content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`, timestamp: new Date() },
-            ])
-            return
-          }
-          setMessages([{ id: 'proactive', role: 'assistant', content: data.response, timestamp: new Date() }])
+          setMessages([{ id: 'proactive', role: 'assistant', content: result.response, timestamp: new Date() }])
         })
         .catch(() => {
           setTyping(false)
@@ -169,11 +160,8 @@ export function AgentChat({ compact }: AgentChatProps) {
     const history = updatedMessages.map((m) => ({ role: m.role, content: m.content }))
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('agent', {
-        body: { messages: history, context },
-      })
-      if (fnError) throw fnError
-      addMessage({ role: 'assistant', content: data?.response ?? 'Agent nije vratio odgovor.' })
+      const result = await invokeAgent({ messages: history, context })
+      addMessage({ role: 'assistant', content: result.response })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Greška pri komunikaciji sa agentom.')
     } finally {
