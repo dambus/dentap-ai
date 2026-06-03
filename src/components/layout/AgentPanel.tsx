@@ -110,62 +110,8 @@ export function AgentChat({ compact }: AgentChatProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  // ── Proaktivna analiza: resetuj razgovor i pokreni pregled kad se otvori karton ──
-  // VAŽNO: Poziv se odlaže 1.5s da page query-i stignu da se izvrše prvi.
-  // Bez kašnjenja, supabase.functions.invoke() i page query-i bi konkurentno
-  // triggerisali Supabase JWT refresh → interni lock → svi zahtevi vise.
-  useEffect(() => {
-    if (
-      context.screen !== 'pacijent' ||
-      !context.patientId ||
-      context.patientId === lastProactivePatientId ||
-      !isOpen
-    )
-      return
-
-    setLastProactivePatientId(context.patientId)
-    setMessages([
-      {
-        id: 'proactive-init',
-        role: 'assistant',
-        content: `Učitavam pregled pacijenta...`,
-        timestamp: new Date(),
-      },
-    ])
-
-    // Odloži Edge Function poziv da page data učita prvo
-    const timer = setTimeout(() => {
-      setTyping(true)
-      setError(null)
-
-      invokeAgent({
-        messages: [
-          {
-            role: 'user',
-            content:
-              'Napravi kratki pregled ovog pacijenta pre pregleda: ' +
-              'istaži medicinska upozorenja i alergije, proveri datum poslednje posete ' +
-              '(ako nije bio duže od 6 meseci predloži kontrolu), i podsetni na sledeću ' +
-              'stavku iz aktivnog plana lečenja ako postoji. Budi koncizan (3–5 rečenica).',
-          },
-        ],
-        context,
-      })
-        .then((result) => {
-          setTyping(false)
-          setMessages([{ id: 'proactive', role: 'assistant', content: result.response, timestamp: new Date() }])
-        })
-        .catch(() => {
-          setTyping(false)
-          setMessages([
-            { id: 'welcome', role: 'assistant', content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`, timestamp: new Date() },
-          ])
-        })
-    }, 1500)
-
-    return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context.patientId, isOpen])
+  // Proaktivna analiza pacijenta je uklonjena — korisnik koji otvori karton
+  // već vidi sve podatke u UI, nema potrebe za duplikatom u chatu.
 
   const handleSend = useCallback(async () => {
     const text = input.trim()

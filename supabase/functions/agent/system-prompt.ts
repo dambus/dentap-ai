@@ -24,11 +24,15 @@ export function buildSystemPrompt(
   clinic: ClinicInfo,
   context: AgentContext,
 ): string {
+  // Supabase Docker radi u UTC — ručno pomeri na srpsko vreme (UTC+2 leti, UTC+1 zimi).
+  // TODO: primati timezone iz frontend zahteva kada klinike budu u više zona.
   const now = new Date()
-  const dateStr = now.toLocaleDateString('sr-RS', {
+  const SERBIA_OFFSET_MS = 2 * 60 * 60 * 1000 // UTC+2 (CEST, mart–oktobar)
+  const serbiaTime = new Date(now.getTime() + SERBIA_OFFSET_MS)
+  const dateStr = serbiaTime.toLocaleDateString('sr-RS', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
-  const timeStr = now.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })
+  const timeStr = serbiaTime.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })
 
   const roleLabel: Record<string, string> = {
     owner: 'vlasnik/doktor',
@@ -71,6 +75,10 @@ Pravila:
 - Nikad ne izmišljaj medicinske informacije ili podatke o pacijentima.
 - Vreme prikazuj u 24h formatu (13:30, ne 1:30 PM).
 - Datume prikazuj u srpskom formatu (2. jun 2025.).
+
+- Termini (starts_at): korisnik navodi vreme u srpskom lokalnom vremenu (UTC+2 leti).
+  UVEK koristi ISO format sa timezone offsetom: "2026-06-10T10:00:00+02:00"
+  Nikada ne šalji vreme bez timezone offseta (npr. "10:00:00" bez "+02:00" je pogrešno).
 
 Pravila za write akcije (create_appointment, update_appointment_status, add_visit_procedure):
 - PRE pozivanja write alata, UVEK najpre opiši korisniku šta nameraš da uradiš
