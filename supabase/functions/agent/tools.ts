@@ -338,13 +338,28 @@ async function getPatientSummary(patientId: string, supabase: SupabaseClient) {
   }
 }
 
+// Identično sa normalizeSr() u src/lib/normalizeSr.ts i normalize_sr() u DB
+function normalizeSr(input: string): string {
+  return input
+    .replace(/Š/g, 'S').replace(/š/g, 's')
+    .replace(/Č/g, 'C').replace(/č/g, 'c')
+    .replace(/Ć/g, 'C').replace(/ć/g, 'c')
+    .replace(/Ž/g, 'Z').replace(/ž/g, 'z')
+    .replace(/Đ/g, 'DJ').replace(/đ/g, 'dj')
+    .toLowerCase()
+}
+
 async function searchPatients(query: string, supabase: SupabaseClient) {
   if (!query.trim()) return { patients: [] }
   const t = query.trim()
+  // Normalizuj query identično kao search_text kolona u bazi:
+  // search_text = normalize_sr("ime prezime prezime ime") → "ilic bojan bojan ilic"
+  // Pretraga po search_text hvata i delimično ime, i oba redosled.
+  const norm = normalizeSr(t)
   const { data, error } = await supabase
     .from('patients')
     .select('id, first_name, last_name, date_of_birth, phone')
-    .or(`last_name.ilike.%${t}%,first_name.ilike.%${t}%,phone.ilike.%${t}%`)
+    .or(`search_text.ilike.%${norm}%,phone.ilike.%${t}%`)
     .is('deleted_at', null)
     .limit(10)
   if (error) return { error: error.message }
