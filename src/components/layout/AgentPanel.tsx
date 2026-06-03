@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { Bot, ChevronLeft, ChevronRight, Send, Mic, MicOff } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
@@ -53,13 +54,33 @@ function MessageBubble({ message }: { message: AgentMessage }) {
       </div>
       <div
         className={cn(
-          'max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap',
+          'max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-relaxed',
           isUser
             ? 'bg-teal-600 text-white rounded-br-sm'
             : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-sm',
         )}
       >
-        {message.content}
+        {isUser ? (
+          <span className="whitespace-pre-wrap">{message.content}</span>
+        ) : (
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              ul: ({ children }) => <ul className="list-disc pl-4 mb-1 space-y-0.5">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal pl-4 mb-1 space-y-0.5">{children}</ol>,
+              li: ({ children }) => <li>{children}</li>,
+              hr: () => <hr className="border-slate-300 dark:border-slate-600 my-2" />,
+              code: ({ children }) => (
+                <code className="bg-slate-200 dark:bg-slate-600 px-1 rounded text-xs font-mono">
+                  {children}
+                </code>
+              ),
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        )}
       </div>
     </div>
   )
