@@ -69,29 +69,69 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval)
   }, [])
 
-  // Kad korisnik vrati tab u fokus posle neaktivnosti:
-  // 1. getSession() "odblokira" Supabase-ov interni refresh lock
-  // 2. Ako nema sesije → signOut (redirect na login)
-  // 3. Ako ima sesije → force-refetch svih aktivnih query-a koji su
-  //    možda ostali u pending/disabled stanju dok je refresh bio blokiran
+  // Detekcija dugotrajne inaktivnosti → reload stranice.
+  //
+  // Chrome "Page Lifecycle": posle ~5min inaktivnosti Chrome ZAMRZNE tab
+  // (suspenduje JS izvršavanje). Kada se odmrzne, Supabase klijentovo stanje
+  // (_isRefreshing, pending promises) je korumpirano — staro pre zamrzavanja,
+  // ali mreža je prekinula vezu. fetchWithTimeout ne pomaže jer je i on bio
+  // zamrznut. Jedino pouzdano rešenje: reload koji čisti celo JS stanje.
+  //
+  // Prag: 10 minuta. Za stomatološku ordinaciju ovo je prihvatljivo —
+  // doktor koji se vraća posle 10+ minuta (između pacijenata) vidi
+  // kratak loading screen i nastavlja normalno rad.
   useEffect(() => {
+    const RELOAD_THRESHOLD_MS = 10 * 60 * 1000 // 10 minuta
+    let hiddenAt: number | null = null
+
     const handleVisibilityChange = async () => {
-      if (document.visibilityState !== 'visible') return
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+        return
+      }
+
+      // Stranica ponovo vidljiva
+      const hiddenDurationMs = hiddenAt != null ? Date.now() - hiddenAt : 0
+      hiddenAt = null
+
+      if (hiddenDurationMs > RELOAD_THRESHOLD_MS) {
+        // Dugo odsustvo → reload čisti korumpirano Supabase stanje
+        window.location.reload()
+        return
+      }
+
+      // Kratko odsustvo (<10min) → samo proveri sesiju i refetch-uj
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) {
           await signOut()
           return
         }
-        // Kick-off svih query-a koji čekaju (disabled ili stale)
         void qc.refetchQueries({ type: 'active' })
       } catch {
         await signOut()
       }
     }
 
+    // freeze/resume: Chrome eksplicitni Page Lifecycle eventi
+    // (precizniji od visibilitychange za detekciju zamrznutih tabova)
+    const handleFreeze = () => { hiddenAt = Date.now() }
+    const handleResume = () => {
+      const frozenMs = hiddenAt != null ? Date.now() - hiddenAt : 0
+      if (frozenMs > RELOAD_THRESHOLD_MS) {
+        window.location.reload()
+      }
+    }
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+    document.addEventListener('freeze', handleFreeze)
+    document.addEventListener('resume', handleResume)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      document.removeEventListener('freeze', handleFreeze)
+      document.removeEventListener('resume', handleResume)
+    }
   }, [signOut, qc])
 
   if (!isInitialized) {
