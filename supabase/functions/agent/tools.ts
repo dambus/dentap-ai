@@ -10,6 +10,13 @@ export interface ToolContext {
 export const toolDefinitions = [
   // ── Read ──────────────────────────────────────────────────────────────────
   {
+    name: 'get_doctors',
+    description:
+      'Vraća listu aktivnih doktora u klinici sa njihovim ID-jevima, imenima i specijalizacijama. ' +
+      'Pozovi UVEK pre zakazivanja termina ako ne znaš ID doktora.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'get_today_schedule',
     description:
       'Vraća listu termina za danas za aktuelnu kliniku, sortirano po vremenu. ' +
@@ -169,6 +176,8 @@ export async function executeTool(
   const num = (v: unknown, def: number) => (typeof v === 'number' ? v : def)
 
   switch (name) {
+    case 'get_doctors':
+      return getDoctors(supabase)
     case 'get_today_schedule':
       return getTodaySchedule(str(input.doctor_id) || null, supabase)
     case 'get_patient_summary':
@@ -233,6 +242,29 @@ export async function executeTool(
 }
 
 // ─── Read handlers ────────────────────────────────────────────────────────────
+
+async function getDoctors(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, display_name, specialty, role, color')
+    .eq('is_doctor', true)
+    .eq('is_active', true)
+    .order('last_name')
+
+  if (error) return { error: error.message }
+
+  return {
+    count: data?.length ?? 0,
+    doctors: (data ?? []).map((d) => ({
+      id: d.id,
+      name: d.display_name ?? `${d.last_name} ${d.first_name}`,
+      first_name: d.first_name,
+      last_name: d.last_name,
+      specialty: d.specialty,
+      role: d.role,
+    })),
+  }
+}
 
 async function getTodaySchedule(doctorId: string | null, supabase: SupabaseClient) {
   const today = new Date().toISOString().split('T')[0]
