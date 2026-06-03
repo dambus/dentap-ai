@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { useQueryClient } from '@tanstack/react-query'
 import { Bot, ChevronLeft, ChevronRight, Send, Mic, MicOff } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
@@ -14,6 +15,33 @@ import type { AgentMessage } from '../../agent/types'
 
 function generateId() {
   return Math.random().toString(36).slice(2)
+}
+
+// Mapiranje agent alata → query ključevi koji treba da se invaliduju.
+// Prefix matching: ['appointments'] invalidiše sve upite koji počinju sa 'appointments'.
+const TOOL_QUERY_KEYS: Record<string, string[][]> = {
+  create_appointment:        [['appointments'], ['visits', 'patient']],
+  update_appointment_status: [['appointments']],
+  update_visit_notes:        [['visit'], ['visits']],
+  add_visit_procedure:       [['visit', 'procedures'], ['visit']],
+}
+
+function invalidateAfterActions(
+  actions: Array<{ tool: string; summary: string }>,
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  const keysToInvalidate = new Set<string>()
+
+  for (const action of actions) {
+    const keys = TOOL_QUERY_KEYS[action.tool] ?? []
+    for (const key of keys) {
+      keysToInvalidate.add(JSON.stringify(key))
+    }
+  }
+
+  for (const keyStr of keysToInvalidate) {
+    queryClient.invalidateQueries({ queryKey: JSON.parse(keyStr) })
+  }
 }
 
 // --- Typing indicator ---
@@ -99,6 +127,7 @@ export function AgentChat({ compact }: AgentChatProps) {
 
   const { messages, isTyping, lastProactivePatientId, addMessage, setMessages, setTyping, setLastProactivePatientId } =
     useAgentStore()
+  const queryClient = useQueryClient()
 
   const [input, setInput] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -129,6 +158,8 @@ export function AgentChat({ compact }: AgentChatProps) {
     try {
       const result = await invokeAgent({ messages: history, context })
       addMessage({ role: 'assistant', content: result.response })
+      // Invaliduj query cache za sve entitete koje je agent promenio
+      invalidateAfterActions(result.actions_taken, queryClient)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Greška pri komunikaciji sa agentom.')
     } finally {
