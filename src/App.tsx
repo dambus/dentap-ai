@@ -48,6 +48,27 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     initialize()
   }, [initialize])
 
+  // Proaktivni token refresh svakih 45 minuta.
+  // Supabase auto-refresh se aktivira tek u poslednjih 30s pre isteka (60min token).
+  // Taj "rush refresh" pod vremenskim pritiskom često se zaglavi na sporom Docker setup-u.
+  // Ovde mi sami refreshujemo token dok je sve mirno — pre nego što Supabase krene.
+  useEffect(() => {
+    const REFRESH_INTERVAL = 45 * 60 * 1000 // 45 minuta
+
+    const interval = setInterval(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return // nije ulogovan, ignorišemo
+        // refreshSession() uvek traži novi token bez obzira na stanje
+        await supabase.auth.refreshSession()
+      } catch {
+        // Greška pri refresh-u je bezopasna ovde — auto-refresh će pokušati ponovo
+      }
+    }, REFRESH_INTERVAL)
+
+    return () => clearInterval(interval)
+  }, [])
+
   // Kad korisnik vrati tab u fokus posle neaktivnosti:
   // 1. getSession() "odblokira" Supabase-ov interni refresh lock
   // 2. Ako nema sesije → signOut (redirect na login)
