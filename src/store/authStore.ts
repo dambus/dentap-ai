@@ -15,6 +15,11 @@ interface AuthState {
   _setFromSession: (user: User | null) => Promise<void>
 }
 
+// Modul-level guard — sprečava duplu registraciju listenera.
+// React Strict Mode double-invokes effects; bez ovoga onAuthStateChange
+// bi se registrovao dvaput, što vodi ka race conditionima i duplim API pozivima.
+let _authSubscription: { unsubscribe: () => void } | null = null
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
@@ -23,12 +28,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isInitialized: false,
 
   initialize: async () => {
+    // Ako je listener već registrovan (Strict Mode double-invoke), preskoči
+    if (_authSubscription) return
+
     const { data: { session } } = await supabase.auth.getSession()
     await get()._setFromSession(session?.user ?? null)
 
-    supabase.auth.onAuthStateChange(async (_event, session) => {
-      await get()._setFromSession(session?.user ?? null)
-    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        await get()._setFromSession(session?.user ?? null)
+      },
+    )
+    _authSubscription = subscription
 
     set({ isInitialized: true })
   },
@@ -44,8 +55,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
+    _authSubscription?.unsubscribe()
+    _authSubscription = null
     await supabase.auth.signOut()
-    set({ user: null, profile: null, clinic: null })
+    set({ user: null, profile: null, clinic: null, isInitialized: false })
   },
 
   _setFromSession: async (user) => {
@@ -56,22 +69,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ user })
 
-    try {
-      const [profileResult, clinicResult] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase
-          .from('clinics')
-          .select('*')
-          .eq('id', user.app_metadata?.clinic_id)
-          .single(),
-      ])
+    // Retry do 3 puta sa eksponencijalnim back-off-om.
+    // Bez retry-a: ako Supabase Docker kasni pri prvom zahtevu, profile/clinic
+    // ostaju null → svi query-i su disabled (enabled: !!clinic?.id = false) →
+    // beskonačni spinner bez grešaka u konzoli.
+    const clinicId = user.app_metadata?.clinic_id as string | undefined
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const [profileRes, clinicRes] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          clinicId
+            ? supabase.from('clinics').select('*').eq('id', clinicId).single()
+            : Promise.resolve({ data: null, error: null }),
+        ])
 
-      set({
-        profile: profileResult.data ?? null,
-        clinic: clinicResult.data ?? null,
-      })
-    } catch {
-      // profil ili klinika nisu dostupni — ne blokirati inicijalizaciju
+        set({
+          profile: profileRes.data ?? null,
+          clinic: clinicRes.data ?? null,
+        })
+        return // uspeh, izlazi iz petlje
+      } catch {
+        if (attempt < 2) {
+          // Čekaj 800ms, 1600ms pre sledećeg pokušaja
+          await new Promise((r) => setTimeout(r, 800 * (attempt + 1)))
+        }
+      }
     }
+    // Posle 3 neuspela pokušaja: profile/clinic ostaju kao pre
+    // (stale vrednosti su bolje od null koji blokira query-e)
   },
 }))

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, QueryCache, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from './store/authStore'
 import { supabase } from './lib/supabase'
 import { ProtectedRoute, AppShell } from './components/layout'
@@ -42,15 +42,17 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   const initialize = useAuthStore((s) => s.initialize)
   const signOut = useAuthStore((s) => s.signOut)
   const isInitialized = useAuthStore((s) => s.isInitialized)
+  const qc = useQueryClient()
 
   useEffect(() => {
     initialize()
   }, [initialize])
 
-  // Kad korisnik vrati tab u fokus posle neaktivnosti — proveri sesiju.
-  // Supabase background timer može biti throttlovan od strane browsera pa se
-  // access token ne refresh-uje na vreme → queriji vise → beskonačni spinner.
-  // Eksplicitni getSession() "odblokira" pending refresh pre nego što queriji krenu.
+  // Kad korisnik vrati tab u fokus posle neaktivnosti:
+  // 1. getSession() "odblokira" Supabase-ov interni refresh lock
+  // 2. Ako nema sesije → signOut (redirect na login)
+  // 3. Ako ima sesije → force-refetch svih aktivnih query-a koji su
+  //    možda ostali u pending/disabled stanju dok je refresh bio blokiran
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState !== 'visible') return
@@ -58,7 +60,10 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) {
           await signOut()
+          return
         }
+        // Kick-off svih query-a koji čekaju (disabled ili stale)
+        void qc.refetchQueries({ type: 'active' })
       } catch {
         await signOut()
       }
@@ -66,7 +71,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [signOut])
+  }, [signOut, qc])
 
   if (!isInitialized) {
     return (

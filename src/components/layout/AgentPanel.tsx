@@ -90,6 +90,9 @@ export function AgentChat({ compact }: AgentChatProps) {
   }, [messages, isTyping])
 
   // ── Proaktivna analiza: resetuj razgovor i pokreni pregled kad se otvori karton ──
+  // VAŽNO: Poziv se odlaže 1.5s da page query-i stignu da se izvrše prvi.
+  // Bez kašnjenja, supabase.functions.invoke() i page query-i bi konkurentno
+  // triggerisali Supabase JWT refresh → interni lock → svi zahtevi vise.
   useEffect(() => {
     if (
       context.screen !== 'pacijent' ||
@@ -108,41 +111,47 @@ export function AgentChat({ compact }: AgentChatProps) {
         timestamp: new Date(),
       },
     ])
-    setTyping(true)
-    setError(null)
 
-    supabase.functions
-      .invoke('agent', {
-        body: {
-          messages: [
-            {
-              role: 'user',
-              content:
-                'Napravi kratki pregled ovog pacijenta pre pregleda: ' +
-                'istaži medicinska upozorenja i alergije, proveri datum poslednje posete ' +
-                '(ako nije bio duže od 6 meseci predloži kontrolu), i podsetni na sledeću ' +
-                'stavku iz aktivnog plana lečenja ako postoji. Budi koncizan (3–5 rečenica).',
-            },
-          ],
-          context,
-        },
-      })
-      .then(({ data, error: fnError }) => {
-        setTyping(false)
-        if (fnError || !data?.response) {
+    // Odloži Edge Function poziv da page data učita prvo
+    const timer = setTimeout(() => {
+      setTyping(true)
+      setError(null)
+
+      supabase.functions
+        .invoke('agent', {
+          body: {
+            messages: [
+              {
+                role: 'user',
+                content:
+                  'Napravi kratki pregled ovog pacijenta pre pregleda: ' +
+                  'istaži medicinska upozorenja i alergije, proveri datum poslednje posete ' +
+                  '(ako nije bio duže od 6 meseci predloži kontrolu), i podsetni na sledeću ' +
+                  'stavku iz aktivnog plana lečenja ako postoji. Budi koncizan (3–5 rečenica).',
+              },
+            ],
+            context,
+          },
+        })
+        .then(({ data, error: fnError }) => {
+          setTyping(false)
+          if (fnError || !data?.response) {
+            setMessages([
+              { id: 'welcome', role: 'assistant', content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`, timestamp: new Date() },
+            ])
+            return
+          }
+          setMessages([{ id: 'proactive', role: 'assistant', content: data.response, timestamp: new Date() }])
+        })
+        .catch(() => {
+          setTyping(false)
           setMessages([
             { id: 'welcome', role: 'assistant', content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`, timestamp: new Date() },
           ])
-          return
-        }
-        setMessages([{ id: 'proactive', role: 'assistant', content: data.response, timestamp: new Date() }])
-      })
-      .catch(() => {
-        setTyping(false)
-        setMessages([
-          { id: 'welcome', role: 'assistant', content: `Zdravo${profile ? `, ${profile.first_name}` : ''}! Kako mogu da pomognem?`, timestamp: new Date() },
-        ])
-      })
+        })
+    }, 1500)
+
+    return () => clearTimeout(timer)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context.patientId, isOpen])
 
